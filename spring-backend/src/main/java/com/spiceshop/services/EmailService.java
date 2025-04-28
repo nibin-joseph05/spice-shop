@@ -4,6 +4,7 @@ package com.spiceshop.services;
 import com.spiceshop.models.User;
 import org.springframework.stereotype.Service;
 
+
 @Service
 public class EmailService {
 
