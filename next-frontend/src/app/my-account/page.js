@@ -67,7 +67,7 @@ export default function MyAccount() {
 
       setSuccess(true);
       setTimeout(() => {
-        window.location.href = '/my-account';
+        window.location.href = '/my-profile';
       }, 2000);
     } catch (err) {
       setError(err.message);
