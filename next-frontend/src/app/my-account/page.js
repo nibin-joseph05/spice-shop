@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
-import { FiUser, FiLock, FiMail, FiArrowRight, FiUserPlus, FiCheckCircle } from 'react-icons/fi';
+import { FiUser, FiLock, FiMail, FiArrowRight, FiUserPlus, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import OTPVerification from '@/components/auth/OTPVerification';
 import CompleteRegistration from '@/components/auth/CompleteRegistration';
 
@@ -95,19 +95,24 @@ export default function MyAccount() {
             className="text-4xl font-bold text-green-900 text-center mb-12 relative"
           >
             {success ? 'Registration Successful!' :
-              registrationStep === 3 ? 'Complete Your Profile' : 'Welcome to KSR Farms!'}
+              registrationStep === 3 ? 'Complete Your Profile' : 'Welcome to Aroglin Spice Farms!'}
             <span className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-amber-700"></span>
           </motion.h1>
 
           {success ? (
-            <div className="text-center p-8 bg-green-50 rounded-xl">
-              <FiCheckCircle className="text-6xl text-green-600 mx-auto mb-4" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-center p-8 bg-green-50 rounded-xl border-2 border-green-200"
+            >
+              <FiCheckCircle className="text-6xl text-green-600 mx-auto mb-4 animate-pulse" />
               <p className="text-lg text-gray-700">
-                Redirecting to login page...
+                Redirecting to your account...
               </p>
-            </div>
+            </motion.div>
           ) : (
             <div className="grid md:grid-cols-2 gap-8">
+              {/* Existing User Login */}
               <motion.div
                 variants={itemVariants}
                 className="bg-white p-8 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 group relative overflow-hidden"
@@ -178,6 +183,25 @@ export default function MyAccount() {
                         <FiUserPlus className="text-amber-700" />
                         New User Registration
                       </h2>
+                      <div className="mb-6 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-600">
+                        <p className="text-sm text-gray-600">
+                          Secure 3-step registration process:
+                        </p>
+                        <ol className="mt-2 space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">1</span>
+                            Enter your email
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">2</span>
+                            Verify with OTP
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">3</span>
+                            Complete profile
+                          </li>
+                        </ol>
+                      </div>
                       <form onSubmit={handleEmailSubmit} className="space-y-6">
                         <div>
                           <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
@@ -191,8 +215,20 @@ export default function MyAccount() {
                             className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
                             required
                           />
+                          <p className="mt-2 text-sm text-gray-500">
+                            We'll send a verification code to this email
+                          </p>
                         </div>
-                        {error && <p className="text-red-600 text-sm">{error}</p>}
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-2"
+                          >
+                            <FiAlertCircle className="flex-shrink-0" />
+                            <span className="text-sm">{error}</span>
+                          </motion.div>
+                        )}
                         <button
                           type="submit"
                           disabled={loading}
@@ -217,12 +253,12 @@ export default function MyAccount() {
                   )}
 
                   {registrationStep === 3 && (
-                      <CompleteRegistration
-                        onSubmit={handleCompleteRegistration}
-                        loading={loading}
-                        error={error}
-                      />
-                    )}
+                    <CompleteRegistration
+                      onSubmit={handleCompleteRegistration}
+                      loading={loading}
+                      error={error}
+                    />
+                  )}
                 </div>
               </motion.div>
             </div>
