@@ -1,10 +1,8 @@
-
 package com.spiceshop.controllers;
 
 import com.spiceshop.services.OTPService;
 import com.spiceshop.services.UserService;
 import com.spiceshop.services.EmailService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.spiceshop.models.User;
@@ -45,6 +43,23 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOTP(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String otp = body.get("otp");
+
+        // Validate OTP
+        if (!otpService.validateOTP(email, otp)) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "Invalid or expired OTP")
+            );
+        }
+
+        return ResponseEntity.ok().body(
+                Map.of("success", true, "message", "OTP verified successfully")
+        );
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, String> body) {
         String email = body.get("email");
@@ -62,7 +77,7 @@ public class AuthController {
         try {
             User user = userService.createUser(firstName, lastName, email, password);
             emailService.sendWelcomeEmail(user);
-            otpService.clearOTP(email);
+            otpService.clearOTP(email);  // Clear OTP after successful registration
 
             return ResponseEntity.ok().body(
                     Map.of("success", true, "message", "Registration successful")

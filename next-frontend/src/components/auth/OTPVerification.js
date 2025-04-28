@@ -12,7 +12,7 @@ export default function OTPVerification({ email, setRegistrationStep, setError }
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch(`${backendUrl}/api/auth/register/verify-otp`, {
+      const response = await fetch(`${backendUrl}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
