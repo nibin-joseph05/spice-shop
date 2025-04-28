@@ -208,6 +208,8 @@ export default function MyAccount() {
                   {registrationStep === 2 && (
                     <OTPVerification
                       email={email}
+                      otp={otp}
+                      setOtp={setOtp}
                       setRegistrationStep={setRegistrationStep}
                       setError={setError}
                       backendUrl={backendUrl}
@@ -215,12 +217,12 @@ export default function MyAccount() {
                   )}
 
                   {registrationStep === 3 && (
-                    <CompleteRegistration
-                      email={email}
-                      setError={setError}
-                      backendUrl={backendUrl}
-                    />
-                  )}
+                      <CompleteRegistration
+                        onSubmit={handleCompleteRegistration}
+                        loading={loading}
+                        error={error}
+                      />
+                    )}
                 </div>
               </motion.div>
             </div>

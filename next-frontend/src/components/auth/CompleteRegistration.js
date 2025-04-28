@@ -1,4 +1,3 @@
-// components/auth/CompleteRegistration.js
 'use client';
 import { useState } from 'react';
 import { FiLock, FiUser } from 'react-icons/fi';
@@ -10,6 +9,10 @@ export default function CompleteRegistration({ onSubmit, loading, error }) {
     password: '',
     confirmPassword: ''
   });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,7 +34,62 @@ export default function CompleteRegistration({ onSubmit, loading, error }) {
         Complete Registration
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Form fields */}
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
+            <FiUser className="text-amber-700" />
+            First Name *
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
+            <FiUser className="text-amber-700" />
+            Last Name *
+          </label>
+          <input
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
+            <FiLock className="text-amber-700" />
+            Password *
+          </label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
+            <FiLock className="text-amber-700" />
+            Confirm Password *
+          </label>
+          <input
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
+            required
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}

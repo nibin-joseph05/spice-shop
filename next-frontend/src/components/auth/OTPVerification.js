@@ -1,10 +1,14 @@
-// components/auth/OTPVerification.js
 'use client';
 import { useState } from 'react';
 import { FiLock, FiArrowRight, FiMail } from 'react-icons/fi';
 
-export default function OTPVerification({ email, setRegistrationStep, setError }) {
-  const [otp, setOtp] = useState('');
+export default function OTPVerification({
+  email,
+  otp,
+  setOtp, // Receive from parent
+  setRegistrationStep,
+  setError
+}) {
   const [loading, setLoading] = useState(false);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -48,7 +52,7 @@ export default function OTPVerification({ email, setRegistrationStep, setError }
           </label>
           <input
             type="text"
-            value={otp}
+            value={otp}  // Use prop value
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
             className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
             required
