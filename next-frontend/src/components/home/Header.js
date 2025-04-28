@@ -42,7 +42,7 @@ export default function Header() {
 
           {/* Auth and Cart */}
           <div className="flex items-center gap-4">
-            <Link href="/login" className="bg-green-700 text-white px-6 py-2 rounded-full hover:bg-green-800">
+            <Link href="/my-account" className="bg-green-700 text-white px-6 py-2 rounded-full hover:bg-green-800">
               Login
             </Link>
             <button className="bg-amber-700 text-white px-6 py-2 rounded-full hover:bg-amber-800">

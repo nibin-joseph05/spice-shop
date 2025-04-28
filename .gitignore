@@ -1,0 +1,3 @@
+# .gitignore
+spring-backend/.env.properties
+.idea

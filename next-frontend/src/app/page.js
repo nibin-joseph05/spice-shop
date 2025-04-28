@@ -2,9 +2,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import HeroCarousel from '@/components/HeroCarousel';
+import Header from '@/components/home/Header';
+import Footer from '@/components/home/Footer';
+import HeroCarousel from '@/components/home/HeroCarousel';
 import Image from 'next/image';
 
 const products = [
