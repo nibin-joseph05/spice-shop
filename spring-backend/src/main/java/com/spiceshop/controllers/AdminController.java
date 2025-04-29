@@ -5,6 +5,9 @@ import com.spiceshop.services.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpSession;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -22,13 +25,19 @@ public class AdminController {
 
     // Endpoint for admin login (simplified for demonstration)
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestParam String email, @RequestParam String password) {
-        boolean isValid = adminService.verifyLogin(email, password);
+    public ResponseEntity<Map<String, String>> login(@RequestBody Admin admin, HttpSession session) {
+        boolean isValid = adminService.verifyLogin(admin.getEmail(), admin.getPassword());
+
+        Map<String, String> response = new HashMap<>();
         if (isValid) {
-            return ResponseEntity.ok("Login successful");
+            session.setAttribute("adminEmail", admin.getEmail());  // store in session
+            response.put("message", "Login successful");
+            return ResponseEntity.ok(response);
         }
-        return ResponseEntity.status(401).body("Invalid credentials");
+        response.put("message", "Invalid credentials");
+        return ResponseEntity.status(401).body(response);
     }
+
 
     // Endpoint for admin recovery using the secret key
     @PostMapping("/recover")
@@ -39,4 +48,15 @@ public class AdminController {
         }
         return ResponseEntity.status(404).body(null);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(HttpSession session) {
+        session.invalidate();  // clears all session attributes
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Logout successful");
+        return ResponseEntity.ok(response);
+    }
+
+
+
 }

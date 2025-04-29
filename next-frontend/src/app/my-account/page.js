@@ -284,6 +284,16 @@ export default function MyAccount() {
                       )}
                     </form>
                   </div>
+                  <p className="mt-3 text-center text-gray-600">
+                    Are you an admin?{" "}
+                    <a
+                      href="/admin-login"
+                      className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+                    >
+                      Login as Admin
+                    </a>
+                  </p>
+
                 </motion.div>
               )}
 
