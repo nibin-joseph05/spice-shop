@@ -193,10 +193,14 @@ export default function MyAccount() {
               className="text-center p-8 bg-green-50 rounded-xl border-2 border-green-200"
             >
               <FiCheckCircle className="text-6xl text-green-600 mx-auto mb-4 animate-pulse" />
-              <p className="text-lg text-gray-700">
+              <p className="text-lg text-gray-700 mb-2">
                 Redirecting to your account...
               </p>
+              <p className="text-sm text-gray-500">
+                You need to log in to explore and access all features.
+              </p>
             </motion.div>
+
           ) : (
             <div className={`grid ${registrationStep === 1 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8`}>
               {/* Login Form */}
@@ -364,6 +368,7 @@ export default function MyAccount() {
                       setOtp={setOtp}
                       setRegistrationStep={setRegistrationStep}
                       error={registrationError}
+                      setError={setRegistrationError}
                       resendCooldown={resendCooldown}
                       handleResendOTP={handleResendOTP}
                       loading={registrationLoading}

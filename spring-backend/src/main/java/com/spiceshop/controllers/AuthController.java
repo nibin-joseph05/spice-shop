@@ -41,6 +41,12 @@ public class AuthController {
     public ResponseEntity<?> sendOTP(@RequestBody Map<String, String> body) {
         String email = body.get("email");
 
+        if (otpService.isOTPRequestBlocked(email)) {
+            return ResponseEntity.status(429).body(
+                    Map.of("success", false, "message", "Too many requests. Please try again later.")
+            );
+        }
+
         if (userService.existsByEmail(email)) {
             return ResponseEntity.badRequest().body(
                     Map.of("success", false, "message", "Email already registered")

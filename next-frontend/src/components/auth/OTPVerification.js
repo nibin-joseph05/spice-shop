@@ -8,10 +8,12 @@ export default function OTPVerification({
   setOtp,
   setRegistrationStep,
   error,
+  setError,
   resendCooldown,
   handleResendOTP
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [otpResent, setOtpResent] = useState(false);  // New state to track OTP resend
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const handleVerifyOTP = async (e) => {
@@ -37,6 +39,12 @@ export default function OTPVerification({
     }
   };
 
+  const handleResend = async () => {
+    await handleResendOTP();  // Call the parent function for OTP resend logic
+    setOtpResent(true);  // Set OTP resend state to true
+    setTimeout(() => setOtpResent(false), 5000);  // Reset the resend message after 5 seconds
+  };
+
   return (
     <div className="relative">
       <h2 className="text-2xl font-bold text-green-900 mb-6 flex items-center gap-2">
@@ -46,6 +54,11 @@ export default function OTPVerification({
       {error && (
         <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg mb-4">
           {error}
+        </div>
+      )}
+      {otpResent && (
+        <div className="p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg mb-4">
+          OTP has been resent successfully! Please check your email.
         </div>
       )}
       <form onSubmit={handleVerifyOTP} className="space-y-6">
@@ -74,6 +87,19 @@ export default function OTPVerification({
           <FiArrowRight className="inline-block" />
         </button>
       </form>
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={resendCooldown > 0 || isLoading}
+          className={`text-amber-700 hover:text-amber-800 text-sm font-medium ${
+            resendCooldown > 0 ? 'cursor-not-allowed' : 'cursor-pointer'
+          }`}
+        >
+          Didn't receive code? Resend OTP
+          {resendCooldown > 0 && ` (${resendCooldown}s)`}
+        </button>
+      </div>
     </div>
   );
 }
