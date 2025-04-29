@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
@@ -25,6 +25,46 @@ export default function MyAccount() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginDisabled, setLoginDisabled] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Login failed');
+
+      window.location.href = '/my-profile';
+    } catch (err) {
+      const attempts = loginAttempts + 1;
+      setLoginAttempts(attempts);
+
+      if (attempts >= 3) {
+        setLoginDisabled(true);
+        setTimeout(() => {
+          setLoginDisabled(false);
+          setLoginAttempts(0);
+        }, 30000);
+      }
+
+      setError(err.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -37,16 +77,47 @@ export default function MyAccount() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
 
       setRegistrationStep(2);
+      setResendCooldown(30);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendOTP = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) throw new Error('Failed to resend OTP');
+
+      setResendCooldown(30);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendCooldown]);
 
   const handleCompleteRegistration = async (formData) => {
     setLoading(true);
@@ -55,20 +126,16 @@ export default function MyAccount() {
       const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          otp,
-          ...formData
-        }),
+        body: JSON.stringify({ email, otp, ...formData }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Registration failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
 
       setSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/my-profile';
-      }, 2000);
+      setTimeout(() => window.location.href = '/my-profile', 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -86,17 +153,17 @@ export default function MyAccount() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "0px 0px -100px 0px" }}
-          className="container mx-auto px-6 max-w-4xl"
+          className="container mx-auto px-4 max-w-4xl"
         >
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl font-bold text-green-900 text-center mb-12 relative"
+            className="text-3xl md:text-4xl font-bold text-green-900 text-center mb-8 relative"
           >
             {success ? 'Registration Successful!' :
               registrationStep === 3 ? 'Complete Your Profile' : 'Welcome to Aroglin Spice Farms!'}
-            <span className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-amber-700"></span>
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-3 w-24 h-1 bg-amber-600" />
           </motion.h1>
 
           {success ? (
@@ -111,131 +178,168 @@ export default function MyAccount() {
               </p>
             </motion.div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className={`grid ${registrationStep === 1 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8`}>
               {/* Existing User Login */}
-              <motion.div
-                variants={itemVariants}
-                className="bg-white p-8 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-amber-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative">
-                  <h2 className="text-2xl font-bold text-green-900 mb-6 flex items-center gap-2">
-                    <FiUser className="text-amber-700" />
-                    Existing User Login
-                  </h2>
-                  <form className="space-y-6">
-                    <div>
-                      <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
-                        <FiMail className="text-amber-700" />
-                        Username or email address *
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
-                        <FiLock className="text-amber-700" />
-                        Password *
-                      </label>
-                      <input
-                        type="password"
-                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-amber-700 text-white px-6 py-3 rounded-full hover:bg-amber-800 transition-all duration-300 flex items-center justify-center gap-2 hover:gap-3"
-                    >
-                      Log in
-                      <FiArrowRight className="inline-block" />
-                    </button>
-                    <div className="flex items-center justify-between mt-4">
-                      <label className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-amber-700 focus:ring-amber-500 transition-colors"
-                        />
-                        <span className="ml-2">Remember me</span>
-                      </label>
-                      <a href="#" className="text-amber-700 hover:text-amber-800 transition-colors flex items-center gap-1">
-                        <FiLock className="inline-block" />
-                        Lost password?
-                      </a>
-                    </div>
-                  </form>
-                </div>
-              </motion.div>
+              {registrationStep === 1 && (
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow"
+                >
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-green-900 flex items-center gap-3">
+                      <FiUser className="text-amber-600" />
+                      Existing User Login
+                    </h2>
+
+                    <form onSubmit={handleLoginSubmit} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email address
+                        </label>
+                        <div className="relative">
+                          <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="email"
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all"
+                            required
+                            disabled={loginDisabled}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="password"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all"
+                            required
+                            disabled={loginDisabled}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <a
+                          href="/forgot-password"
+                          className="text-sm text-amber-700 hover:text-amber-800 transition-colors"
+                        >
+                          Forgot your password?
+                        </a>
+                      </div>
+
+                      {error && (
+                        <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <FiAlertCircle className="flex-shrink-0" />
+                            <div>
+                              <p className="font-medium">Authentication Error</p>
+                              <p className="text-sm">{error}</p>
+                              {loginAttempts > 0 && (
+                                <p className="text-xs mt-1">
+                                  Remaining attempts: {3 - loginAttempts}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loading || loginDisabled}
+                        className="w-full bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {loading ? 'Logging in...' : 'Continue'}
+                        <FiArrowRight className="text-lg" />
+                      </button>
+
+                      {loginDisabled && (
+                        <div className="text-center text-sm text-red-600 mt-2">
+                          <p>Account temporarily locked due to multiple failed attempts.</p>
+                          <p className="mt-1">Please try again in 30 seconds.</p>
+                        </div>
+                      )}
+                    </form>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Registration Section */}
               <motion.div
                 variants={itemVariants}
-                className="bg-white p-8 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 group relative overflow-hidden"
+                className="bg-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-amber-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative">
+                <div className="space-y-6">
                   {registrationStep === 1 && (
                     <>
-                      <h2 className="text-2xl font-bold text-green-900 mb-6 flex items-center gap-2">
-                        <FiUserPlus className="text-amber-700" />
+                      <h2 className="text-2xl font-bold text-green-900 flex items-center gap-3">
+                        <FiUserPlus className="text-amber-600" />
                         New User Registration
                       </h2>
-                      <div className="mb-6 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-600">
-                        <p className="text-sm text-gray-600">
+                      <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-600">
+                        <p className="text-sm text-gray-600 mb-3">
                           Secure 3-step registration process:
                         </p>
-                        <ol className="mt-2 space-y-2 text-sm">
-                          <li className="flex items-center gap-2">
-                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">1</span>
-                            Enter your email
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">2</span>
-                            Verify with OTP
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <span className="w-5 h-5 bg-amber-600 text-white rounded-full flex items-center justify-center">3</span>
-                            Complete profile
-                          </li>
+                        <ol className="space-y-3">
+                          {[1, 2, 3].map((step) => (
+                            <li key={step} className="flex items-center gap-3">
+                              <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center">
+                                {step}
+                              </span>
+                              <span className="text-sm">
+                                {step === 1 && 'Enter your email'}
+                                {step === 2 && 'Verify with OTP'}
+                                {step === 3 && 'Complete profile'}
+                              </span>
+                            </li>
+                          ))}
                         </ol>
                       </div>
+
                       <form onSubmit={handleEmailSubmit} className="space-y-6">
                         <div>
-                          <label className="block text-gray-700 mb-2 font-medium flex items-center gap-2">
-                            <FiMail className="text-amber-700" />
-                            Email address *
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email address
                           </label>
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
-                            required
-                          />
+                          <div className="relative">
+                            <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                              type="email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all"
+                              required
+                            />
+                          </div>
                           <p className="mt-2 text-sm text-gray-500">
-                            We'll send a verification code to this email
+                            We'll send a 6-digit verification code to this email address
                           </p>
                         </div>
+
                         {error && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-2"
-                          >
-                            <FiAlertCircle className="flex-shrink-0" />
-                            <span className="text-sm">{error}</span>
-                          </motion.div>
+                          <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <FiAlertCircle className="flex-shrink-0" />
+                              <p className="text-sm">{error}</p>
+                            </div>
+                          </div>
                         )}
+
                         <button
                           type="submit"
                           disabled={loading}
-                          className="w-full bg-amber-700 text-white px-6 py-3 rounded-full hover:bg-amber-800 transition-all duration-300 flex items-center justify-center gap-2 hover:gap-3 disabled:bg-amber-400"
+                          className="w-full bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           {loading ? 'Sending OTP...' : 'Continue'}
-                          <FiArrowRight className="inline-block" />
+                          <FiArrowRight className="text-lg" />
                         </button>
                       </form>
                     </>
@@ -249,6 +353,8 @@ export default function MyAccount() {
                       setRegistrationStep={setRegistrationStep}
                       setError={setError}
                       backendUrl={backendUrl}
+                      resendCooldown={resendCooldown}
+                      handleResendOTP={handleResendOTP}
                     />
                   )}
 
@@ -263,18 +369,6 @@ export default function MyAccount() {
               </motion.div>
             </div>
           )}
-
-          {/* Decorative Elements */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute top-0 right-0 w-48 h-48 bg-green-200/30 rounded-full blur-3xl -z-10"
-          />
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute bottom-0 left-0 w-48 h-48 bg-amber-200/30 rounded-full blur-3xl -z-10"
-          />
         </motion.div>
       </main>
 

@@ -3,11 +3,16 @@ package com.spiceshop.controllers;
 import com.spiceshop.services.OTPService;
 import com.spiceshop.services.UserService;
 import com.spiceshop.services.EmailService;
+import com.spiceshop.models.User;
+import com.spiceshop.repositorys.UserRepository;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.spiceshop.models.User;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,13 +22,19 @@ public class AuthController {
     private final UserService userService;
     private final OTPService otpService;
     private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthController(UserService userService,
                           OTPService otpService,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          UserRepository userRepository,
+                          BCryptPasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.otpService = otpService;
         this.emailService = emailService;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/send-otp")
@@ -38,7 +49,7 @@ public class AuthController {
 
         String otp = otpService.generateOTP(email);
         emailService.sendRegistrationOTP(email, otp);
-        return ResponseEntity.ok().body(
+        return ResponseEntity.ok(
                 Map.of("success", true, "message", "OTP sent successfully")
         );
     }
@@ -48,14 +59,13 @@ public class AuthController {
         String email = body.get("email");
         String otp = body.get("otp");
 
-        // Validate OTP
         if (!otpService.validateOTP(email, otp)) {
             return ResponseEntity.badRequest().body(
                     Map.of("success", false, "message", "Invalid or expired OTP")
             );
         }
 
-        return ResponseEntity.ok().body(
+        return ResponseEntity.ok(
                 Map.of("success", true, "message", "OTP verified successfully")
         );
     }
@@ -77,9 +87,9 @@ public class AuthController {
         try {
             User user = userService.createUser(firstName, lastName, email, password);
             emailService.sendWelcomeEmail(user);
-            otpService.clearOTP(email);  // Clear OTP after successful registration
+            otpService.clearOTP(email);
 
-            return ResponseEntity.ok().body(
+            return ResponseEntity.ok(
                     Map.of("success", true, "message", "Registration successful")
             );
         } catch (Exception e) {
@@ -87,5 +97,26 @@ public class AuthController {
                     Map.of("success", false, "message", "Registration failed")
             );
         }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(
+            @RequestBody Map<String, String> body,
+            HttpSession session
+    ) {
+        String email = body.get("email");
+        String password = body.get("password");
+
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty() || !passwordEncoder.matches(password, userOpt.get().getPassword())) {
+            return ResponseEntity.status(401).body(
+                    Map.of("success", false, "message", "Invalid email or password")
+            );
+        }
+
+        session.setAttribute("userId", userOpt.get().getId());
+        return ResponseEntity.ok(
+                Map.of("success", true, "message", "Login successful")
+        );
     }
 }
