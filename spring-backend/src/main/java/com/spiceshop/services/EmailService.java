@@ -140,13 +140,10 @@ public class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <img src="%s" class="logo" alt="Aroglin Spice Farms">
+                        <img src="https://i.imgur.com/196Evc7.png" class="logo" alt="Aroglin Spice Farms">
                         <h1 style="color: #2d3748; margin: 0; font-size: 24px;">Premium Organic Spices</h1>
                     </div>
-                    <div class="content">
-                        %s
-                    </div>
-                    %s
+                    
                     <div class="footer">
                         <p>Need assistance? Contact our support team at<br>
                         <a href="mailto:%s" style="color: #c05621; text-decoration: none;">%s</a></p>
@@ -172,9 +169,9 @@ public class EmailService {
         <div class="features">
             <p style="margin: 0;"><strong>Why choose us?</strong></p>
             <ul style="margin: 15px 0; padding-left: 20px;">
-                <li>100% Organic Certified Spices</li>
+                <li>100%% Organic Certified Spices</li> <!-- Escaped -->
                 <li>Directly Sourced from Farmers</li>
-                <li>Fast Pan-India Delivery</li>
+                <li>Fast Pan-India Delivery (100%% on-time)</li> <!-- Example fix -->
             </ul>
         </div>
         <p style="color: #718096; font-size: 0.9em;">This OTP is valid for 5 minutes. If you didn't request this, please ignore this email.</p>
@@ -182,6 +179,7 @@ public class EmailService {
 
         sendEmail(email, "Your Secret Spice Code 🧂 - Aroglin Spice Farms", content);
     }
+
 
     public void sendWelcomeEmail(User user) {
         String profileUrl = frontendUrl + "/my-profile";
