@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
@@ -12,10 +12,39 @@ import OrdersList from '@/components/profile/OrdersList';
 export default function MyProfile() {
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
-    firstName: 'Arjun',
-    lastName: 'Mohan',
-    email: 'arjun@spicelovers.com'
-  });
+      firstName: '',
+      lastName: '',
+      email: ''
+    });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+      const fetchUserData = async () => {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`${backendUrl}/api/users/me`, {
+            credentials: 'include'
+          });
+          if (!response.ok) throw new Error('Failed to fetch user');
+          const { success, user } = await response.json();
+          if (success) {
+            setFormData({
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email
+            });
+          }
+        } catch (error) {
+          console.error('Fetch error:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchUserData();
+    }, []);
+
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -63,6 +92,19 @@ export default function MyProfile() {
     { id: 1, items: 'Cardamom (Class 1), Black Pepper', date: '2024-03-15', amount: '₹640', status: 'Delivered' },
     { id: 2, items: 'Turmeric Powder, Red Chilli', date: '2024-02-28', amount: '₹320', status: 'Processing' }
   ];
+
+
+  if (isLoading) {
+      return (
+        <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
+          <Header />
+          <main className="flex-grow flex items-center justify-center">
+            <p>Loading profile...</p>
+          </main>
+          <Footer />
+        </div>
+      );
+    }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
