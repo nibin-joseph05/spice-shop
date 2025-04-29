@@ -21,20 +21,40 @@ export default function MyAccount() {
   const [registrationStep, setRegistrationStep] = useState(1);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [loginDisabled, setLoginDisabled] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  // Separate states for login and registration
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [registrationLoading, setRegistrationLoading] = useState(false);
+  const [registrationError, setRegistrationError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    checkSession();
+  }, []);
+
+  const checkSession = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/api/auth/check-session`, {
+        credentials: 'include'
+      });
+      if (response.ok) window.location.href = '/my-profile';
+    } catch (error) {
+      console.error('Session check failed:', error);
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setLoginLoading(true);
+    setLoginError('');
 
     try {
       const response = await fetch(`${backendUrl}/api/auth/login`, {
@@ -60,16 +80,16 @@ export default function MyAccount() {
         }, 30000);
       }
 
-      setError(err.message || 'Invalid email or password');
+      setLoginError(err.message || 'Invalid email or password');
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
     }
   };
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setRegistrationLoading(true);
+    setRegistrationError('');
     try {
       const response = await fetch(`${backendUrl}/api/auth/send-otp`, {
         method: 'POST',
@@ -85,14 +105,14 @@ export default function MyAccount() {
       setRegistrationStep(2);
       setResendCooldown(30);
     } catch (err) {
-      setError(err.message);
+      setRegistrationError(err.message);
     } finally {
-      setLoading(false);
+      setRegistrationLoading(false);
     }
   };
 
   const handleResendOTP = async () => {
-    setLoading(true);
+    setRegistrationLoading(true);
     try {
       const response = await fetch(`${backendUrl}/api/auth/send-otp`, {
         method: 'POST',
@@ -104,9 +124,9 @@ export default function MyAccount() {
 
       setResendCooldown(30);
     } catch (err) {
-      setError(err.message);
+      setRegistrationError(err.message);
     } finally {
-      setLoading(false);
+      setRegistrationLoading(false);
     }
   };
 
@@ -120,8 +140,8 @@ export default function MyAccount() {
   }, [resendCooldown]);
 
   const handleCompleteRegistration = async (formData) => {
-    setLoading(true);
-    setError('');
+    setRegistrationLoading(true);
+    setRegistrationError('');
     try {
       const response = await fetch(`${backendUrl}/api/auth/register`, {
         method: 'POST',
@@ -135,11 +155,11 @@ export default function MyAccount() {
       }
 
       setSuccess(true);
-      setTimeout(() => window.location.href = '/my-profile', 2000);
+      setTimeout(() => window.location.href = '/my-account', 2000);
     } catch (err) {
-      setError(err.message);
+      setRegistrationError(err.message);
     } finally {
-      setLoading(false);
+      setRegistrationLoading(false);
     }
   };
 
@@ -179,7 +199,7 @@ export default function MyAccount() {
             </motion.div>
           ) : (
             <div className={`grid ${registrationStep === 1 ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-8`}>
-              {/* Existing User Login */}
+              {/* Login Form */}
               {registrationStep === 1 && (
                 <motion.div
                   variants={itemVariants}
@@ -226,22 +246,13 @@ export default function MyAccount() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <a
-                          href="/forgot-password"
-                          className="text-sm text-amber-700 hover:text-amber-800 transition-colors"
-                        >
-                          Forgot your password?
-                        </a>
-                      </div>
-
-                      {error && (
+                      {loginError && (
                         <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
                           <div className="flex items-center gap-2">
-                            <FiAlertCircle className="flex-shrink-0" />
+                            <FiAlertCircle />
                             <div>
-                              <p className="font-medium">Authentication Error</p>
-                              <p className="text-sm">{error}</p>
+                              <p className="font-medium">Login Error</p>
+                              <p className="text-sm">{loginError}</p>
                               {loginAttempts > 0 && (
                                 <p className="text-xs mt-1">
                                   Remaining attempts: {3 - loginAttempts}
@@ -254,10 +265,10 @@ export default function MyAccount() {
 
                       <button
                         type="submit"
-                        disabled={loading || loginDisabled}
+                        disabled={loginLoading || loginDisabled}
                         className="w-full bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        {loading ? 'Logging in...' : 'Continue'}
+                        {loginLoading ? 'Logging in...' : 'Continue'}
                         <FiArrowRight className="text-lg" />
                       </button>
 
@@ -272,7 +283,7 @@ export default function MyAccount() {
                 </motion.div>
               )}
 
-              {/* Registration Section */}
+              {/* Registration Form */}
               <motion.div
                 variants={itemVariants}
                 className="bg-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow"
@@ -284,6 +295,16 @@ export default function MyAccount() {
                         <FiUserPlus className="text-amber-600" />
                         New User Registration
                       </h2>
+
+                      {registrationError && (
+                        <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <FiAlertCircle />
+                            <p className="text-sm">{registrationError}</p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-600">
                         <p className="text-sm text-gray-600 mb-3">
                           Secure 3-step registration process:
@@ -324,21 +345,12 @@ export default function MyAccount() {
                           </p>
                         </div>
 
-                        {error && (
-                          <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <FiAlertCircle className="flex-shrink-0" />
-                              <p className="text-sm">{error}</p>
-                            </div>
-                          </div>
-                        )}
-
                         <button
                           type="submit"
-                          disabled={loading}
+                          disabled={registrationLoading}
                           className="w-full bg-amber-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {loading ? 'Sending OTP...' : 'Continue'}
+                          {registrationLoading ? 'Sending OTP...' : 'Continue'}
                           <FiArrowRight className="text-lg" />
                         </button>
                       </form>
@@ -351,18 +363,18 @@ export default function MyAccount() {
                       otp={otp}
                       setOtp={setOtp}
                       setRegistrationStep={setRegistrationStep}
-                      setError={setError}
-                      backendUrl={backendUrl}
+                      error={registrationError}
                       resendCooldown={resendCooldown}
                       handleResendOTP={handleResendOTP}
+                      loading={registrationLoading}
                     />
                   )}
 
                   {registrationStep === 3 && (
                     <CompleteRegistration
                       onSubmit={handleCompleteRegistration}
-                      loading={loading}
-                      error={error}
+                      loading={registrationLoading}
+                      error={registrationError}
                     />
                   )}
                 </div>

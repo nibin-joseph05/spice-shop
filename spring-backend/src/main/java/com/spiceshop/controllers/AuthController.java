@@ -56,18 +56,30 @@ public class AuthController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOTP(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String otp = body.get("otp");
+        try {
+            String email = body.get("email");
+            String otp = body.get("otp");
 
-        if (!otpService.validateOTP(email, otp)) {
-            return ResponseEntity.badRequest().body(
-                    Map.of("success", false, "message", "Invalid or expired OTP")
+            if (email == null || otp == null) {
+                return ResponseEntity.badRequest().body(
+                        Map.of("success", false, "message", "Email and OTP are required")
+                );
+            }
+
+            if (!otpService.validateOTP(email, otp)) {
+                return ResponseEntity.status(401).body(
+                        Map.of("success", false, "message", "Invalid or expired OTP")
+                );
+            }
+
+            return ResponseEntity.ok(
+                    Map.of("success", true, "message", "OTP verified successfully")
+            );
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("success", false, "message", "Server error during OTP verification")
             );
         }
-
-        return ResponseEntity.ok(
-                Map.of("success", true, "message", "OTP verified successfully")
-        );
     }
 
     @PostMapping("/register")
@@ -117,6 +129,27 @@ public class AuthController {
         session.setAttribute("userId", userOpt.get().getId());
         return ResponseEntity.ok(
                 Map.of("success", true, "message", "Login successful")
+        );
+    }
+
+    @GetMapping("/check-session")
+    public ResponseEntity<?> checkSession(HttpSession session) {
+        Object userId = session.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).body(
+                    Map.of("success", false, "message", "Not authenticated")
+            );
+        }
+        return ResponseEntity.ok(
+                Map.of("success", true, "userId", userId)
+        );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpSession session) {
+        session.invalidate();
+        return ResponseEntity.ok(
+                Map.of("success", true, "message", "Logout successful")
         );
     }
 }
