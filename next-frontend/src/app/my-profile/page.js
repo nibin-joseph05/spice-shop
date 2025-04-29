@@ -64,7 +64,6 @@ export default function MyProfile() {
     }, []);
 
 
-
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',

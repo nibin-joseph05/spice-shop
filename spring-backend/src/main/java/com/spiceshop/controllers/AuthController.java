@@ -125,10 +125,32 @@ public class AuthController {
         String email = body.get("email");
         String password = body.get("password");
 
+        // Validate input fields
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "Email is required")
+            );
+        }
+
+        if (password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "Password is required")
+            );
+        }
+
         Optional<User> userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty() || !passwordEncoder.matches(password, userOpt.get().getPassword())) {
+
+        // Check if user exists
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).body(
-                    Map.of("success", false, "message", "Invalid email or password")
+                    Map.of("success", false, "message", "Account not found with this email")
+            );
+        }
+
+        // Verify password
+        if (!passwordEncoder.matches(password, userOpt.get().getPassword())) {
+            return ResponseEntity.status(401).body(
+                    Map.of("success", false, "message", "Incorrect password")
             );
         }
 
