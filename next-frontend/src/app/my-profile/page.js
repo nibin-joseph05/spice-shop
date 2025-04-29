@@ -10,6 +10,7 @@ import PasswordForm from '@/components/profile/PasswordForm';
 import OrdersList from '@/components/profile/OrdersList';
 
 export default function MyProfile() {
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
       firstName: '',
@@ -21,14 +22,29 @@ export default function MyProfile() {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   useEffect(() => {
-      const fetchUserData = async () => {
+      const checkSessionAndFetchData = async () => {
         setIsLoading(true);
         try {
-          const response = await fetch(`${backendUrl}/api/users/me`, {
+          // First check session validity
+          const sessionResponse = await fetch(`${backendUrl}/api/auth/check-session`, {
             credentials: 'include'
           });
-          if (!response.ok) throw new Error('Failed to fetch user');
-          const { success, user } = await response.json();
+
+          if (!sessionResponse.ok) {
+            setUserLoggedIn(false);
+            setIsLoading(false);
+            return;
+          }
+
+          // If session valid, fetch user data
+          setUserLoggedIn(true);
+          const userResponse = await fetch(`${backendUrl}/api/users/me`, {
+            credentials: 'include'
+          });
+
+          if (!userResponse.ok) throw new Error('Failed to fetch user');
+          const { success, user } = await userResponse.json();
+
           if (success) {
             setFormData({
               firstName: user.firstName,
@@ -37,13 +53,16 @@ export default function MyProfile() {
             });
           }
         } catch (error) {
-          console.error('Fetch error:', error);
+          console.error('Error:', error);
+          setUserLoggedIn(false);
         } finally {
           setIsLoading(false);
         }
       };
-      fetchUserData();
+
+      checkSessionAndFetchData();
     }, []);
+
 
 
   const [passwordData, setPasswordData] = useState({
@@ -124,6 +143,7 @@ export default function MyProfile() {
             >
               {activeTab === 'profile' && (
                 <ProfileForm
+                  user={userLoggedIn}
                   formData={formData}
                   setFormData={setFormData}
                   errors={errors}
@@ -133,6 +153,7 @@ export default function MyProfile() {
 
               {activeTab === 'password' && (
                 <PasswordForm
+                  user={userLoggedIn}
                   passwordData={passwordData}
                   setPasswordData={setPasswordData}
                   errors={errors}

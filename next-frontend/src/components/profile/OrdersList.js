@@ -9,6 +9,25 @@ const itemVariants = {
 };
 
 export default function OrdersList({ orders }) {
+  if (!orders || orders.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl shadow-xl p-8"
+      >
+        <div className="flex items-center gap-3 mb-8">
+          <FiBox className="text-2xl text-amber-700" />
+          <h2 className="text-2xl font-bold text-green-900">Order History</h2>
+        </div>
+
+        <div className="text-center text-sm text-gray-600">
+          <p>No orders found. Please check back later.</p>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"

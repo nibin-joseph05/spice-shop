@@ -9,8 +9,23 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
-export default function ProfileForm({ formData, setFormData, errors, onSubmit }) {
+export default function ProfileForm({ user, formData, setFormData, errors, onSubmit }) {
   const [isEditing, setIsEditing] = useState(false);
+
+  if (!user) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 text-center"
+      >
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Access Restricted</h2>
+        <p className="text-gray-500 text-sm">
+          You must be logged in to view and update your profile. Please sign in to continue.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -93,8 +108,7 @@ export default function ProfileForm({ formData, setFormData, errors, onSubmit })
           <motion.div variants={itemVariants} className="md:col-span-2 mt-4">
             <button
               type="submit"
-              className="w-full bg-amber-600 text-white px-6 py-3 rounded-xl hover:bg-amber-700
-                        transition-all duration-200 shadow-sm hover:shadow-md"
+              className="w-full bg-amber-600 text-white px-6 py-3 rounded-xl hover:bg-amber-700 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Save Changes
             </button>

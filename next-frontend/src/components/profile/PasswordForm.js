@@ -8,7 +8,22 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
-export default function PasswordForm({ passwordData, setPasswordData, errors, onSubmit }) {
+export default function PasswordForm({ user, passwordData, setPasswordData, errors, onSubmit }) {
+  if (!user) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 text-center"
+      >
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Access Restricted</h2>
+        <p className="text-gray-500 text-sm">
+          You must be logged in to change your password. Please sign in to continue.
+        </p>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"
