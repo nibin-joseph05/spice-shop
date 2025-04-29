@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiUser } from 'react-icons/fi';
+import { FiUser, FiEdit3, FiSave } from 'react-icons/fi';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -9,27 +10,35 @@ const itemVariants = {
 };
 
 export default function ProfileForm({ formData, setFormData, errors, onSubmit }) {
+  const [isEditing, setIsEditing] = useState(false);
+
   return (
     <motion.div
       initial="hidden"
       animate="visible"
-      variants={{
-        visible: { transition: { staggerChildren: 0.05 } }
-      }}
+      variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
       className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8"
     >
-      <div className="flex items-center gap-4 mb-8">
-        <div className="p-3 bg-amber-50 rounded-xl">
-          <FiUser className="text-2xl text-amber-700" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-amber-50 rounded-xl">
+            <FiUser className="text-2xl text-amber-700" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+            <p className="text-gray-500 mt-1">Update your personal details</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
-          <p className="text-gray-500 mt-1">Update your personal details</p>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsEditing(!isEditing)}
+          className="text-sm text-amber-700 flex items-center gap-1 hover:underline"
+        >
+          {isEditing ? <><FiSave /> Save</> : <><FiEdit3 /> Edit</>}
+        </button>
       </div>
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Input fields */}
         <motion.div variants={itemVariants} className="space-y-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
           <input
@@ -40,6 +49,7 @@ export default function ProfileForm({ formData, setFormData, errors, onSubmit })
               errors.firstName ? 'border-red-200 bg-red-50' : 'border-gray-200'
             } focus:ring-2 focus:ring-amber-500 focus:border-amber-500 placeholder-gray-400`}
             placeholder="Enter your first name"
+            disabled={!isEditing}
           />
           {errors.firstName && (
             <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
@@ -60,6 +70,7 @@ export default function ProfileForm({ formData, setFormData, errors, onSubmit })
             className={`w-full px-4 py-3 rounded-lg border ${
               errors.lastName ? 'border-red-500' : 'border-gray-300'
             } focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
+            disabled={!isEditing}
           />
           {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
         </motion.div>
@@ -73,19 +84,22 @@ export default function ProfileForm({ formData, setFormData, errors, onSubmit })
             className={`w-full px-4 py-3 rounded-lg border ${
               errors.email ? 'border-red-500' : 'border-gray-300'
             } focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
+            disabled={!isEditing}
           />
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="md:col-span-2 mt-4">
-          <button
-            type="submit"
-            className="w-full bg-amber-600 text-white px-6 py-3 rounded-xl hover:bg-amber-700
-                     transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            Save Changes
-          </button>
-        </motion.div>
+        {isEditing && (
+          <motion.div variants={itemVariants} className="md:col-span-2 mt-4">
+            <button
+              type="submit"
+              className="w-full bg-amber-600 text-white px-6 py-3 rounded-xl hover:bg-amber-700
+                        transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              Save Changes
+            </button>
+          </motion.div>
+        )}
       </form>
     </motion.div>
   );
