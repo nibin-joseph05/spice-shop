@@ -23,7 +23,10 @@ public class Spice {
     private String name;
     private String unit;
     private String description;
-    private String imageUrl;
+
+    @OneToMany(mappedBy = "spice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SpiceImage> images = new ArrayList<>();
+
     private String origin;
 
     private Boolean isAvailable = true;
