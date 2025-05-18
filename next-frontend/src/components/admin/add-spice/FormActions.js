@@ -1,5 +1,5 @@
 // components/admin/add-spice/FormActions.js
-export const FormActions = ({ onCancel }) => (
+export const FormActions = ({ onCancel, isSubmitting }) => (
   <div className="flex justify-end gap-4 mt-8">
     <button
       type="button"
@@ -10,9 +10,12 @@ export const FormActions = ({ onCancel }) => (
     </button>
     <button
       type="submit"
-      className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all"
+      disabled={isSubmitting}
+      className={`px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all ${
+        isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+      }`}
     >
-      Add Spice Product
+      {isSubmitting ? "Adding..." : "Add Spice Product"}
     </button>
   </div>
 );

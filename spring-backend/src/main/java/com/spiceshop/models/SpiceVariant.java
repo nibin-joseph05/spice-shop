@@ -23,6 +23,35 @@ public class SpiceVariant {
     @JoinColumn(name = "spice_id")
     private Spice spice;
 
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
 
+    public String getQualityClass() {
+        return qualityClass;
+    }
+
+    public void setQualityClass(String qualityClass) {
+        this.qualityClass = qualityClass;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public Spice getSpice() {
+        return spice;
+    }
+
+    public void setSpice(Spice spice) {
+        this.spice = spice;
+    }
 }

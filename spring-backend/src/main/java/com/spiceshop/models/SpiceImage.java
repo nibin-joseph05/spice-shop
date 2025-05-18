@@ -1,5 +1,6 @@
 package com.spiceshop.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,4 +22,32 @@ public class SpiceImage {
     private Spice spice;
 
 
+    @JsonCreator
+    public SpiceImage(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Spice getSpice() {
+        return spice;
+    }
+
+    public void setSpice(Spice spice) {
+        this.spice = spice;
+    }
 }
