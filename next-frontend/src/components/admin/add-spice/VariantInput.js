@@ -45,13 +45,15 @@ export const VariantInput = ({ index, variant, onChange, onRemove, darkMode, err
     </div>
 
     <div className="flex items-end">
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-700 text-white rounded-lg transition-all"
-      >
-        <FiX /> Remove
-      </button>
+      {index !== 0 && (
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="px-3 bg-red-600/80 hover:bg-red-700 text-white rounded-lg transition-all"
+        >
+          <FiX />
+        </button>
+      )}
     </div>
   </div>
 );

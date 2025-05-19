@@ -1,4 +1,5 @@
 // components/admin/add-spice/ImageInput.js
+import { useRef, useEffect } from "react";
 import { FiX, FiLink, FiUpload } from "react-icons/fi";
 
 export const ImageInput = ({
@@ -8,14 +9,32 @@ export const ImageInput = ({
   onChange,
   onRemove,
   darkMode,
-  error
+  error,
+  isFirst
 }) => {
-  // Toggle between URL and File modes, resetting the value safely
+  const fileInputRef = useRef(null);
+  const urlInputRef = useRef(null);
+
+  useEffect(() => {
+    if (type === "url") {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      urlInputRef.current.value = value || "";
+    } else {
+      if (urlInputRef.current) urlInputRef.current.value = "";
+    }
+  }, [type, value]);
+
   const toggleType = () => {
     const newType = type === "url" ? "file" : "url";
-    // URLs expect a string; files expect null (no file selected)
-    const newValue = newType === "url" ? "" : null;
-    onChange(index, newType, newValue);
+    onChange(index, newType, newType === "url" ? "" : null);
+  };
+
+  const handleFileChange = (e) => {
+    onChange(index, "file", e.target.files?.[0] || null);
+  };
+
+  const handleUrlChange = (e) => {
+    onChange(index, "url", e.target.value);
   };
 
   return (
@@ -24,45 +43,51 @@ export const ImageInput = ({
         <label className="block text-sm font-medium">
           Image {index + 1} ({type === "url" ? "URL" : "File"})
         </label>
-        <button
-          type="button"
-          onClick={toggleType}
-          className="text-sm flex items-center gap-1 p-1 hover:bg-gray-700/20 rounded"
-        >
-          {type === "url" ? <FiUpload /> : <FiLink />}
-          Switch to {type === "url" ? "File" : "URL"}
-        </button>
+        {isFirst && (
+          <button
+            type="button"
+            onClick={toggleType}
+            className="text-sm flex items-center gap-1 p-1 hover:bg-gray-700/20 rounded"
+          >
+            {type === "url" ? <FiUpload /> : <FiLink />}
+            Switch to {type === "url" ? "File" : "URL"}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2">
         {type === "url" ? (
           <input
+            ref={urlInputRef}
             type="url"
             className={`w-full px-4 py-2 rounded-lg ${
               darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-300"
             } ${error ? "border-red-500" : ""}`}
-            value={value || ""}
-            onChange={(e) => onChange(index, "url", e.target.value)}
+            defaultValue={value || ""}
+            onChange={handleUrlChange}
             placeholder="https://example.com/image.jpg"
           />
         ) : (
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/jpeg, image/png"
             className={`w-full px-4 py-2 rounded-lg ${
               darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-300"
             } ${error ? "border-red-500" : ""}`}
-            onChange={(e) => onChange(index, "file", e.target.files[0] || null)}
+            onChange={handleFileChange}
           />
         )}
 
-        <button
-          type="button"
-          onClick={() => onRemove(index)}
-          className="px-3 bg-red-600/80 hover:bg-red-700 text-white rounded-lg transition-all"
-        >
-          <FiX />
-        </button>
+        {!isFirst && (
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="px-3 bg-red-600/80 hover:bg-red-700 text-white rounded-lg transition-all"
+          >
+            <FiX />
+          </button>
+        )}
       </div>
 
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}

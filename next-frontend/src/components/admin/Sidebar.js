@@ -2,7 +2,7 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { FiHome, FiPlusCircle, FiBox, FiUsers, FiDollarSign } from "react-icons/fi";
+import { FiHome, FiPlusCircle, FiBox, FiUsers, FiDollarSign, FiList } from "react-icons/fi";
 
 export const Sidebar = () => {
   const router = useRouter();
@@ -11,6 +11,7 @@ export const Sidebar = () => {
   const navItems = [
     { path: "/admin-dashboard", icon: FiHome, label: "Dashboard Overview" },
     { path: "/admin/add-spice", icon: FiPlusCircle, label: "Add New Product" },
+    { path: "/admin/spice-list", icon: FiList, label: "Spice List" },
     { path: "/admin/inventory", icon: FiBox, label: "Manage Inventory" },
     { path: "/admin/customers", icon: FiUsers, label: "Customer Management" },
     { path: "/admin/analytics", icon: FiDollarSign, label: "Order Analytics" },

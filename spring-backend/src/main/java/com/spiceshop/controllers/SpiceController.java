@@ -6,6 +6,7 @@ import com.spiceshop.models.*;
 import com.spiceshop.services.SpiceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -90,6 +94,40 @@ public class SpiceController {
             return "/uploads/spices/" + filename;
         } catch (IOException ex) {
             throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), ex);
+        }
+    }
+
+    @GetMapping("/spices")
+    public ResponseEntity<List<SpiceDto>> getAllSpices() {
+        List<Spice> spices = spiceService.getAllSpices();
+        List<SpiceDto> dtos = spices.stream()
+                .map(spiceService::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    @DeleteMapping("/spices/{id}")
+    public ResponseEntity<?> deleteSpice(@PathVariable Long id) {
+        try {
+            spiceService.deleteSpice(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Spice not found with id: " + id));
+        }
+    }
+
+    // PATCH endpoint for availability
+    @PatchMapping("/spices/{id}/availability")
+    public ResponseEntity<SpiceDto> updateAvailability(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request) {
+        try {
+            Spice updated = spiceService.updateAvailability(id, request.get("available"));
+            return ResponseEntity.ok(spiceService.toDto(updated));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
         }
     }
 }

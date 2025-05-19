@@ -7,6 +7,8 @@ import com.spiceshop.repositorys.SpiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,6 +21,27 @@ public class SpiceService {
     public Spice createSpice(Spice spice) {
         spice.getVariants().forEach(v -> v.setSpice(spice));
         spice.getImages().forEach(i -> i.setSpice(spice));
+        return spiceRepository.save(spice);
+    }
+
+    public List<Spice> getAllSpices() {
+        return spiceRepository.findAll();
+    }
+
+    @Transactional
+    public void deleteSpice(Long id) {
+        Spice spice = spiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Spice not found"));
+
+        // Cascade delete will handle variants and images if properly configured
+        spiceRepository.delete(spice);
+    }
+
+    @Transactional
+    public Spice updateAvailability(Long id, Boolean available) {
+        Spice spice = spiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Spice not found"));
+        spice.setAvailable(available);
         return spiceRepository.save(spice);
     }
 
@@ -44,4 +67,5 @@ public class SpiceService {
         );
         return dto;
     }
+
 }

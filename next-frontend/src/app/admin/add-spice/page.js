@@ -85,11 +85,23 @@ export default function AddSpicePage() {
     setFormData(prev => ({ ...prev, images: newImages }));
   };
 
+  // app/admin/add-spice/page.js
   const addImage = () => {
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, { type: "url", value: "" }]
-    }));
+    setFormData(prev => {
+      const lastImageType = prev.images.length > 0
+        ? prev.images[prev.images.length - 1].type
+        : "url";
+      return {
+        ...prev,
+        images: [
+          ...prev.images,
+          {
+            type: lastImageType,
+            value: lastImageType === "url" ? "" : null
+          }
+        ]
+      };
+    });
   };
 
   const removeImage = (index) => {
@@ -271,7 +283,45 @@ export default function AddSpicePage() {
                     </p>
                   </div>
 
-                  {/* ... other fields with similar error handling ... */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-2">
+                      Description
+                      <span className="ml-2 text-gray-400 text-sm">(Optional but recommended)</span>
+                    </label>
+                    <textarea
+                      name="description"
+                      rows="3"
+                      className={`w-full px-4 py-2 rounded-lg ${
+                        darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-300"
+                      }`}
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      placeholder="Add a compelling product description..."
+                    />
+                    <p className="mt-1 text-sm text-gray-400">
+                      Help customers understand your product better
+                    </p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-2">
+                      Origin
+                      <span className="ml-2 text-gray-400 text-sm">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="origin"
+                      className={`w-full px-4 py-2 rounded-lg ${
+                        darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-300"
+                      }`}
+                      value={formData.origin}
+                      onChange={handleInputChange}
+                      placeholder="E.g., Grown in Kerala, India"
+                    />
+                    <p className="mt-1 text-sm text-gray-400">
+                      Share the product's origin story - it adds authenticity!
+                    </p>
+                  </div>
                 </div>
               </FormSection>
 
@@ -288,11 +338,11 @@ export default function AddSpicePage() {
                     index={index}
                     variant={variant}
                     onChange={handleVariantChange}
-                    onRemove={(i) => removeItem("variants", i)}
+                    onRemove={() => removeVariant(index)}
                     darkMode={darkMode}
                     errors={{
                       quality: errors[`variantQuality-${index}`],
-                      price: errors[`variantPrice-${index}`]
+                      price:   errors[`variantPrice-${index}`]
                     }}
                   />
                 ))}
@@ -300,6 +350,7 @@ export default function AddSpicePage() {
                   Example: Quality Class could be 'Premium', 'Standard' etc.
                 </p>
               </FormSection>
+
 
             <FormSection
               title="Product Images"
@@ -311,7 +362,7 @@ export default function AddSpicePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {formData.images.map((image, index) => (
                   <ImageInput
-                    key={index}
+                    key={`image-${index}-${image.type}`}
                     index={index}
                     type={image.type}
                     value={image.value}
@@ -319,12 +370,13 @@ export default function AddSpicePage() {
                     onRemove={removeImage}
                     darkMode={darkMode}
                     error={errors[`image-${index}`]}
+                    isFirst={index === 0}
                   />
                 ))}
               </div>
               <p className="text-sm text-gray-400 mt-2">
-                Note: You can add images either by URL or file upload, but not both in the same field.
-                Maximum 5 images allowed.
+                Note: First image is required. You can switch between URL/file for the first image.
+                Additional images will match the type of the last image.
               </p>
             </FormSection>
 
