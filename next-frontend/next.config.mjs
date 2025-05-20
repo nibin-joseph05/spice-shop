@@ -10,6 +10,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '5.imimg.com',
       },
+      {
+        protocol: 'http',
+        hostname: '5.imimg.com',
+      }
     ],
   },
 };

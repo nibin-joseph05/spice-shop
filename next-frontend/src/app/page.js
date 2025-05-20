@@ -103,11 +103,13 @@ export default function Home() {
                     className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden"
                   >
                     <div className="relative h-64 overflow-hidden">
+
                       <Image
-                        src={spice.images?.[0]?.imageUrl || '/spice-fallback/spice-placeholder.webp'}
+                        src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
                         alt={spice.name}
                         width={400}
                         height={300}
+                        unoptimized
                         className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 to-transparent" />

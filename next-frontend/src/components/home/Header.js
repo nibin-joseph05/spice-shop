@@ -65,6 +65,7 @@ export default function Header() {
 
           {/* Navigation Links */}
           <div className="hidden lg:flex items-center gap-6">
+            <Link href="/" className="text-gray-700 hover:text-green-700 transition">Home</Link>
             <Link href="/shop" className="text-gray-700 hover:text-green-700 transition">Shop</Link>
             <Link href="/my-profile" className="text-gray-700 hover:text-green-700 transition">My Account</Link>
             <Link href="/about" className="text-gray-700 hover:text-green-700 transition">About</Link>
