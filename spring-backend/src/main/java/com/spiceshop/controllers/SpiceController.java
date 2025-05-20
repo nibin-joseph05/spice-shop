@@ -63,39 +63,11 @@ public class SpiceController {
             });
         }
 
-        // handle file uploads
-        if (files != null) {
-            Files.createDirectories(uploadDir);
-            for (MultipartFile f : files) {
-                String url = storeFile(f);
-                SpiceImage si = new SpiceImage();
-                si.setImageUrl(url);
-                entity.getImages().add(si);
-            }
-        }
-
         Spice saved = spiceService.createSpice(entity);
         SpiceDto dto = spiceService.toDto(saved);
         return ResponseEntity.ok(dto);
     }
 
-    private String storeFile(MultipartFile file) {
-        try {
-            // clean filename
-            String original = StringUtils.cleanPath(file.getOriginalFilename());
-            String filename = System.currentTimeMillis() + "-" + original;
-
-            // target location
-            Path target = uploadDir.resolve(filename);
-            // copy file
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-
-            // return the URL path under which Spring can serve it
-            return "/uploads/spices/" + filename;
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), ex);
-        }
-    }
 
     @GetMapping("/spices")
     public ResponseEntity<List<SpiceDto>> getAllSpices() {

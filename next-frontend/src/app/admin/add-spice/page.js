@@ -20,7 +20,7 @@ export default function AddSpicePage() {
     origin: "",
     isAvailable: true,
     variants: [{ qualityClass: "", price: "" }],
-    images: [{ type: "url", value: "" }]
+    images: [""]
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,29 +79,18 @@ export default function AddSpicePage() {
     setFormData(prev => ({ ...prev, variants: newVariants }));
   };
 
-  const handleImageChange = (index, type, value) => {
-    const newImages = [...formData.images];
-    newImages[index] = { type, value };
-    setFormData(prev => ({ ...prev, images: newImages }));
+  const handleImageChange = (index, value) => {
+      const newImages = [...formData.images];
+      newImages[index] = value;
+      setFormData(prev => ({ ...prev, images: newImages }));
   };
 
   // app/admin/add-spice/page.js
   const addImage = () => {
-    setFormData(prev => {
-      const lastImageType = prev.images.length > 0
-        ? prev.images[prev.images.length - 1].type
-        : "url";
-      return {
-        ...prev,
-        images: [
-          ...prev.images,
-          {
-            type: lastImageType,
-            value: lastImageType === "url" ? "" : null
-          }
-        ]
-      };
-    });
+      setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ""]
+      }));
   };
 
   const removeImage = (index) => {
@@ -133,12 +122,10 @@ export default function AddSpicePage() {
       const imageUrls = [];
       const files = [];
 
-      formData.images.forEach(image => {
-        if (image.type === "url" && image.value.trim()) {
-          imageUrls.push(image.value);
-        } else if (image.type === "file" && image.value) {
-          files.push(image.value);
-        }
+      formData.images.forEach((url, index) => {
+          if (url && !isValidUrl(url)) {
+              newErrors[`image-${index}`] = "Invalid URL format";
+          }
       });
 
       const spiceData = {
@@ -151,7 +138,7 @@ export default function AddSpicePage() {
           qualityClass: v.qualityClass,
           price: parseFloat(v.price)
         })),
-        imageUrls
+        imageUrls: formData.images.filter(url => url.trim() !== "")
       };
 
       payload.append("spice", JSON.stringify(spiceData));
@@ -353,31 +340,26 @@ export default function AddSpicePage() {
 
 
             <FormSection
-              title="Product Images"
-              darkMode={darkMode}
-              icon="🖼️"
-              onAdd={addImage}
-              helpText="Add product images via URL or file upload (max 5 images)"
+                title="Product Images"
+                darkMode={darkMode}
+                icon="🖼️"
+                onAdd={addImage}
+                helpText="Add product image URLs"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {formData.images.map((image, index) => (
-                  <ImageInput
-                    key={`image-${index}-${image.type}`}
-                    index={index}
-                    type={image.type}
-                    value={image.value}
-                    onChange={handleImageChange}
-                    onRemove={removeImage}
-                    darkMode={darkMode}
-                    error={errors[`image-${index}`]}
-                    isFirst={index === 0}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-gray-400 mt-2">
-                Note: First image is required. You can switch between URL/file for the first image.
-                Additional images will match the type of the last image.
-              </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {formData.images.map((url, index) => (
+                        <ImageInput
+                            key={index}
+                            index={index}
+                            value={url}
+                            onChange={handleImageChange}
+                            onRemove={removeImage}
+                            darkMode={darkMode}
+                            error={errors[`image-${index}`]}
+                            isFirst={index === 0}
+                        />
+                    ))}
+                </div>
             </FormSection>
 
             <FormActions
