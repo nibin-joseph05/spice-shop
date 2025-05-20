@@ -1,53 +1,128 @@
-// app/page.js
 'use client';
 
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import Image from 'next/image';
+import { debounce } from 'lodash';
 
+// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.3
+    }
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1 }
+  hidden: { y: 30, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 12
+    }
+  }
+};
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.8 }
+  }
 };
 
 export default function Home() {
   const [spices, setSpices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isClient, setIsClient] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredSpices, setFilteredSpices] = useState([]);
 
+  // Handle client-side only features
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Fetch spices data
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const fetchSpices = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices`);
+        setLoading(true);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices`,
+          { signal }
+        );
+
         if (!response.ok) throw new Error('Failed to fetch spices');
+
         const data = await response.json();
         setSpices(data);
+        setFilteredSpices(data);
       } catch (err) {
-        setError(err.message);
+        if (err.name !== 'AbortError') {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
     };
+
     fetchSpices();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
+
+  // Filter spices based on search term
+  const debouncedSearch = useCallback(
+    debounce((term) => {
+      if (!term.trim()) {
+        setFilteredSpices(spices);
+        return;
+      }
+
+      const filtered = spices.filter(spice =>
+        spice.name.toLowerCase().includes(term.toLowerCase()) ||
+        spice.description.toLowerCase().includes(term.toLowerCase())
+      );
+
+      setFilteredSpices(filtered);
+    }, 300),
+    [spices]
+  );
+
+  useEffect(() => {
+    debouncedSearch(searchTerm);
+  }, [searchTerm, debouncedSearch]);
+
+  if (!isClient) {
+    return null; // Prevent hydration errors
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-700"></div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-700"></div>
+            <p className="text-amber-800 animate-pulse">Loading premium spices...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -59,7 +134,23 @@ export default function Home() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow flex items-center justify-center">
-          <p className="text-red-500 text-lg">{error}</p>
+          <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg max-w-lg mx-auto">
+            <div className="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-lg font-semibold text-red-800">Something went wrong</h3>
+                <p className="text-red-600">{error}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </main>
         <Footer />
       </div>
@@ -74,118 +165,306 @@ export default function Home() {
         <HeroCarousel />
 
         {/* Featured Products Section */}
-        <section className="py-16 bg-white">
+        <section className="py-16 mt-8">
           <div className="container mx-auto px-6">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
               viewport={{ once: true, margin: "0px 0px -100px 0px" }}
-              className="text-3xl font-bold text-center text-green-900 mb-12 relative"
+              variants={fadeIn}
+              className="relative mb-16 text-center"
             >
-              <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-amber-700"></span>
-              Our Premium Spices Collection
-            </motion.h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-green-900 inline-block relative">
+                Our Premium Spices Collection
+                <span className="absolute -bottom-3 left-0 right-0 mx-auto w-24 h-1.5 bg-amber-600 rounded-full"></span>
+              </h2>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto">
+                Handpicked from Kerala's finest farms and processed with care to preserve their authentic flavors and aromatic essence.
+              </p>
+            </motion.div>
 
-            {spices.length === 0 ? (
-              <p className="text-center text-gray-600">Discover our spices soon! Currently curating the finest selection...</p>
-            ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "0px 0px -100px 0px" }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-8"
-              >
-                {spices.map((spice) => (
-                  <motion.div
-                    key={spice.id}
-                    variants={itemVariants}
-                    className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden"
-                  >
-                    <div className="relative h-64 overflow-hidden">
-
-                      <Image
-                        src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
-                        alt={spice.name}
-                        width={400}
-                        height={300}
-                        unoptimized
-                        className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 to-transparent" />
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <h3 className="text-xl font-bold text-green-900 mb-2">
-                          {spice.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {spice.description}
-                        </p>
+            <AnimatePresence>
+              {filteredSpices.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-amber-50 border border-amber-100 rounded-lg p-8 text-center max-w-lg mx-auto"
+                >
+                  <div className="text-5xl mb-4">🔍</div>
+                  <h3 className="text-xl font-semibold text-amber-800 mb-2">No spices found</h3>
+                  <p className="text-amber-700">
+                    {searchTerm ?
+                      `No spices match your search for "${searchTerm}". Try different keywords.` :
+                      "We're currently curating our finest selection of spices. Check back soon!"}
+                  </p>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                    >
+                      Clear Search
+                    </button>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "0px 0px -100px 0px" }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                >
+                  {filteredSpices.map((spice) => (
+                    <motion.div
+                      key={spice.id}
+                      variants={itemVariants}
+                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden border border-gray-100"
+                    >
+                      <div className="relative h-64 overflow-hidden">
+                        <div className="absolute inset-0 bg-gray-200 animate-pulse z-0"></div>
+                        <Image
+                          src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
+                          alt={spice.name}
+                          width={400}
+                          height={300}
+                          className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700 ease-in-out z-10 relative"
+                          onLoad={(e) => {
+                            e.target.parentElement.querySelector('.animate-pulse')?.classList.add('hidden');
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent z-20" />
+                        <div className="absolute bottom-4 left-4 z-30">
+                          <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">Premium</span>
+                        </div>
                       </div>
 
-                      <div className="space-y-3 mb-5">
-                        {spice.variants.map((variant, i) => (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center bg-green-50/50 p-3 rounded-lg border border-green-100"
-                          >
-                            <span className="text-sm font-medium text-green-800">
-                              {variant.qualityClass}
-                            </span>
-                            <span className="text-base font-bold text-amber-700">
-                              ₹{variant.price.toFixed(2)} / {spice.unit}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      <div className="p-6">
+                        <div className="mb-4">
+                          <h3 className="text-xl font-bold text-green-900 mb-2 group-hover:text-amber-700 transition-colors">
+                            {spice.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {spice.description}
+                          </p>
+                        </div>
 
-                      <button className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                        </svg>
-                        Add to Cart
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
+                        <div className="space-y-3 mb-5">
+                          {spice.variants.map((variant, i) => (
+                            <div
+                              key={i}
+                              className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 hover:border-green-200 transition-all"
+                            >
+                              <span className="text-sm font-medium text-green-800">
+                                {variant.qualityClass}
+                              </span>
+                              <div className="flex items-center">
+                                <span className="text-base font-bold text-amber-700">
+                                  ₹{variant.price.toFixed(2)} / {spice.unit}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group">
+                          <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-56 group-hover:h-56 opacity-10"></span>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                          </svg>
+                          <span>Add to Cart</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
         {/* Quality Promise Section */}
-        <section className="bg-green-50 py-16">
+        <section className="py-16 bg-gradient-to-b from-white to-green-50">
           <div className="container mx-auto px-6">
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true, margin: "0px 0px -100px 0px" }}
               className="max-w-4xl mx-auto text-center"
             >
-              <h2 className="text-3xl font-bold text-green-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-green-900 mb-6 relative inline-block">
                 Our Quality Promise
+                <svg className="absolute -top-6 -right-12 text-amber-400 w-10 h-10 opacity-70" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9.153 5.408C10.42 3.136 11.053 2 12 2c.947 0 1.58 1.136 2.847 3.408l.328.588c.36.646.54.969.82 1.182c.28.213.63.292 1.33.45l.636.144c2.46.557 3.689.835 3.982 1.776c.292.94-.546 1.921-2.223 3.882l-.434.507c-.476.557-.715.836-.822 1.18c-.107.345-.071.717.001 1.46l.066.677c.253 2.617.38 3.925-.386 4.506c-.766.582-1.918.051-4.22-1.009l-.597-.274c-.654-.302-.981-.452-1.328-.452c-.347 0-.674.15-1.329.452l-.595.274c-2.303 1.06-3.455 1.59-4.22 1.01c-.767-.582-.64-1.89-.387-4.507l.066-.676c.072-.744.108-1.116 0-1.46c-.106-.345-.345-.624-.821-1.18l-.434-.508c-1.677-1.96-2.515-2.941-2.223-3.882c.293-.94 1.523-1.22 3.983-1.776l.636-.144c.699-.158 1.048-.237 1.329-.45c.28-.213.46-.536.82-1.182l.328-.588Z"/>
+                </svg>
               </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Every spice is carefully sourced from trusted farmers, sun-dried naturally, and handpicked to ensure you get the purest flavors straight from Kerala's lush fields.
+              <p className="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">
+                Every spice in our collection is carefully sourced from trusted farmers,
+                sun-dried naturally, and handpicked to ensure you get the purest flavors
+                straight from Kerala's lush fields to your kitchen.
               </p>
+
               <div className="grid md:grid-cols-3 gap-8">
                 {[
-                  { icon: '🌿', title: 'Natural Farming', text: 'Chemical-free cultivation' },
-                  { icon: '👩🌾', title: 'Direct from Farmers', text: 'Supporting local communities' },
-                  { icon: '✨', title: 'Premium Selection', text: 'Only top-grade produce' }
+                  {
+                    icon: '🌿',
+                    title: 'Natural Farming',
+                    text: 'Grown without chemicals or pesticides, preserving both flavor and health benefits'
+                  },
+                  {
+                    icon: '👩‍🌾',
+                    title: 'Direct from Farmers',
+                    text: 'Supporting local communities with fair prices and sustainable practices'
+                  },
+                  {
+                    icon: '✨',
+                    title: 'Premium Selection',
+                    text: 'Every batch is carefully inspected to ensure only top-grade spices reach your table'
+                  }
                 ].map((item, i) => (
                   <motion.div
                     key={i}
-                    whileHover={{ y: -5 }}
-                    className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.2 }}
+                    viewport={{ once: true }}
+                    whileHover={{ y: -8, boxShadow: "0 15px 30px rgba(0,0,0,0.1)" }}
+                    className="p-8 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-green-100"
                   >
-                    <div className="text-4xl mb-4">{item.icon}</div>
-                    <h3 className="text-xl font-semibold text-green-900 mb-2">
+                    <div className="text-5xl mb-6">{item.icon}</div>
+                    <h3 className="text-xl font-semibold text-green-900 mb-3">
                       {item.title}
                     </h3>
                     <p className="text-gray-600">{item.text}</p>
                   </motion.div>
                 ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-16 bg-amber-50">
+          <div className="container mx-auto px-6">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-3xl font-bold text-center text-green-900 mb-12 relative"
+            >
+              <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-amber-600"></span>
+              What Our Customers Say
+            </motion.h2>
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {[
+                {
+                  name: "Priya S.",
+                  location: "Mumbai",
+                  text: "The cardamom is exceptional! It has transformed my chai completely. So much more aromatic than what I used to buy at supermarkets.",
+                  rating: 5
+                },
+                {
+                  name: "Rahul M.",
+                  location: "Delhi",
+                  text: "I've been using their black pepper for 6 months now. The flavor is incredible and the grind is perfect for my cooking needs.",
+                  rating: 5
+                },
+                {
+                  name: "Anita K.",
+                  location: "Bangalore",
+                  text: "Their turmeric has the most vibrant color I've ever seen. You can really tell the difference in quality compared to standard brands.",
+                  rating: 4
+                }
+              ].map((testimonial, i) => (
+                <motion.div
+                  key={i}
+                  variants={itemVariants}
+                  className="bg-white p-6 rounded-xl shadow-md relative"
+                >
+                  <div className="absolute -top-4 right-6 bg-amber-500 text-white rounded-full p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-800 font-bold mr-4">
+                      {testimonial.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{testimonial.name}</h4>
+                      <p className="text-sm text-gray-500">{testimonial.location}</p>
+                    </div>
+                  </div>
+                  <div className="flex mb-3">
+                    {[...Array(5)].map((_, starIndex) => (
+                      <svg
+                        key={starIndex}
+                        className={`h-5 w-5 ${starIndex < testimonial.rating ? 'text-amber-500' : 'text-gray-300'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-gray-600 italic">"{testimonial.text}"</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <div className="text-center mt-10">
+              <button className="inline-flex items-center px-6 py-3 bg-green-800 text-white rounded-lg hover:bg-green-900 transition-colors">
+                <span>View All Reviews</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className="py-16 bg-green-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="spice-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M20 0C9 0 0 9 0 20s9 20 20 20 20-9 20-20S31 0 20 0zm0 30c-5.5 0-10-4.5-10-10s4.5-10 10-10 10 4.5 10 10-4.5 10-10 10z" fill="currentColor" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#spice-pattern)" />
+            </svg>
+          </div>
+
+          <div className="container mx-auto px-6 relative z-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="max-w-3xl mx-auto text-center"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Experience the Authentic Taste of Kerala
+              </h2>
+              <p className="text-lg mb-8 text-green-100">
+                Join thousands of satisfied customers who have elevated their cooking
+                with our premium, ethically-sourced spices.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex-1 w-full sm:w-auto">
+                  Shop Now
+                </button>
+                <button className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-900 transition-all flex-1 w-full sm:w-auto">
+                  Learn More
+                </button>
               </div>
             </motion.div>
           </div>
