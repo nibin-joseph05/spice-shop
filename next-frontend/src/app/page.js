@@ -49,12 +49,10 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredSpices, setFilteredSpices] = useState([]);
 
-  // Handle client-side only features
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Fetch spices data
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
@@ -88,7 +86,6 @@ export default function Home() {
     };
   }, []);
 
-  // Filter spices based on search term
   const debouncedSearch = useCallback(
     debounce((term) => {
       if (!term.trim()) {
@@ -110,9 +107,7 @@ export default function Home() {
     debouncedSearch(searchTerm);
   }, [searchTerm, debouncedSearch]);
 
-  if (!isClient) {
-    return null; // Prevent hydration errors
-  }
+  if (!isClient) return null;
 
   if (loading) {
     return (
@@ -183,103 +178,115 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <AnimatePresence>
-              {filteredSpices.length === 0 ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "0px 0px -100px 0px" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {filteredSpices.map((spice) => (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="bg-amber-50 border border-amber-100 rounded-lg p-8 text-center max-w-lg mx-auto"
+                  key={spice.id}
+                  variants={itemVariants}
+                  className="group relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+                  whileHover={{ y: -5 }}
                 >
-                  <div className="text-5xl mb-4">🔍</div>
-                  <h3 className="text-xl font-semibold text-amber-800 mb-2">No spices found</h3>
-                  <p className="text-amber-700">
-                    {searchTerm ?
-                      `No spices match your search for "${searchTerm}". Try different keywords.` :
-                      "We're currently curating our finest selection of spices. Check back soon!"}
-                  </p>
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-                    >
-                      Clear Search
-                    </button>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "0px 0px -100px 0px" }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                >
-                  {filteredSpices.map((spice) => (
-                    <motion.div
-                      key={spice.id}
-                      variants={itemVariants}
-                      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden border border-gray-100"
-                    >
-                      <div className="relative h-64 overflow-hidden">
-                        <div className="absolute inset-0 bg-gray-200 animate-pulse z-0"></div>
-                        <Image
-                          src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
-                          alt={spice.name}
-                          width={400}
-                          height={300}
-                          className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700 ease-in-out z-10 relative"
-                          onLoad={(e) => {
-                            e.target.parentElement.querySelector('.animate-pulse')?.classList.add('hidden');
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent z-20" />
-                        <div className="absolute bottom-4 left-4 z-30">
-                          <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">Premium</span>
-                        </div>
+                  <div className="relative h-64 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 to-transparent z-20" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/10 z-30" />
+                    <Image
+                      src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
+                      alt={spice.name}
+                      width={400}
+                      height={300}
+                      className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 ease-out"
+                    />
+                    <div className="absolute top-4 right-4 z-40 flex gap-2">
+                      <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-md backdrop-blur-sm">
+                        Organic
+                      </span>
+                      <span className="bg-green-700 text-white px-3 py-1 rounded-full text-sm font-medium shadow-md backdrop-blur-sm">
+                        Direct Farm
+                      </span>
+                    </div>
+                    <div className="absolute bottom-4 left-4 z-30">
+                      <span className="bg-white/90 text-green-900 px-3 py-1 rounded-full text-sm font-medium shadow-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Freshness Guarantee
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-green-900 mb-2 group-hover:text-amber-700 transition-colors">
+                        {spice.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                        {spice.description}
+                      </p>
+                      <div className="flex items-center text-sm text-green-700 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <span>Origin: {spice.origin || 'Kerala'}</span>
                       </div>
+                      <div className="flex items-center text-sm text-amber-700 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
+                        </svg>
+                        <span>Heat Level: {spice.heatLevel || 'Medium'}</span>
+                      </div>
+                    </div>
 
-                      <div className="p-6">
-                        <div className="mb-4">
-                          <h3 className="text-xl font-bold text-green-900 mb-2 group-hover:text-amber-700 transition-colors">
-                            {spice.name}
-                          </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {spice.description}
-                          </p>
-                        </div>
-
-                        <div className="space-y-3 mb-5">
-                          {spice.variants.map((variant, i) => (
-                            <div
-                              key={i}
-                              className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 hover:border-green-200 transition-all"
-                            >
-                              <span className="text-sm font-medium text-green-800">
-                                {variant.qualityClass}
-                              </span>
-                              <div className="flex items-center">
-                                <span className="text-base font-bold text-amber-700">
-                                  ₹{variant.price.toFixed(2)} / {spice.unit}
+                    <div className="h-48 overflow-y-auto pr-2 mb-5 scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50">
+                      {spice.variants.map((variant, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.02 }}
+                          className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 hover:border-green-200 transition-all mb-3 last:mb-0"
+                        >
+                          <div>
+                            <span className="block text-sm font-medium text-green-800">
+                              {variant.qualityClass}
+                            </span>
+                            <span className="text-xs text-green-600">Grade {variant.grade}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-2">
+                              {variant.stock < 10 && (
+                                <span className="text-xs text-red-600">Only {variant.stock} left</span>
+                              )}
+                              <div>
+                                <span className="block text-base font-bold text-amber-700">
+                                  ₹{variant.price.toFixed(2)}
                                 </span>
+                                <span className="text-sm text-green-600">per {spice.unit}</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
 
-                        <button className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group">
-                          <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-56 group-hover:h-56 opacity-10"></span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                          </svg>
-                          <span>Add to Cart</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
+                    >
+                      <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                      </svg>
+                      <span>Add to Cart</span>
+                      <span className="absolute right-0 w-8 h-full bg-white/20 transform -skew-x-12 translate-x-12 group-hover:translate-x-[-100px] transition-all duration-500"></span>
+                    </motion.button>
+                  </div>
                 </motion.div>
-              )}
-            </AnimatePresence>
+              ))}
+            </motion.div>
           </div>
         </section>
 
