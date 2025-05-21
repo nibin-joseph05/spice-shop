@@ -65,7 +65,7 @@ export default function Shop() {
   const fetchProducts = useCallback(
     debounce(async (page = 1) => {
       try {
-        setLoading(true);
+        setLoading(true); // Set loading true at the start of fetch
         setError(''); // Clear previous errors
 
         const queryParams = {
@@ -106,7 +106,7 @@ export default function Shop() {
         console.error("Error fetching products:", err);
         setError(err.message || 'An unexpected error occurred. Please try again.');
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading false at the end
       }
     }, 300),
     [filters]
@@ -323,19 +323,14 @@ export default function Shop() {
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
                 >
                   {products.map((product) => {
-                    // Calculate the lowest price among variants for "Starting from" display
-                    const minPrice = product.variants && product.variants.length > 0
-                      ? Math.min(...product.variants.map(v => v.price))
-                      : null;
-
                     return (
                       <motion.div
                         key={product.id}
                         variants={itemVariants}
-                        className="group bg-white rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 relative flex flex-col"
-                        onClick={() => handleViewDetails(product.id)} // Make the whole card clickable
+                        className="group bg-white rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden border border-gray-100 relative flex flex-col"
+                        // Removed onClick from the entire card
                       >
-                        <div className="relative h-64 w-full flex-shrink-0 bg-gray-100 flex items-center justify-center"> {/* Added bg-gray-100 and centering */}
+                        <div className="relative h-64 w-full flex-shrink-0 bg-gray-100 flex items-center justify-center">
                           <Image
                             src={product.imageUrls?.[0] || "https://placehold.co/600x400/E0E0E0/FFFFFF?text=No+Image"}
                             alt={product.name}
@@ -357,30 +352,40 @@ export default function Shop() {
                             {product.description}
                           </p>
 
-                          {/* Displaying the base unit and "Starting from" price */}
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-amber-700 text-2xl font-extrabold">
-                              {minPrice !== null ? `₹${minPrice.toFixed(2)}` : 'Price N/A'}
-                            </span>
+                          {/* Displaying the base unit */}
+                          <div className="flex justify-end items-center mb-3">
                             <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                               {product.unit}
                             </span>
                           </div>
 
-                          {/* Origin and Quality Class Badges */}
+                          {/* Origin Badge */}
                           <div className="flex flex-wrap gap-2 mb-3">
                             {product.origin && (
                               <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                                 Origin: {product.origin}
                               </span>
                             )}
-                            {/* Display all unique quality classes for the product */}
-                            {product.variants && product.variants.length > 0 && (
-                              [...new Set(product.variants.map(v => v.qualityClass))].map((qc, idx) => (
-                                <span key={idx} className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                                  Quality: {qc}
-                                </span>
+                          </div>
+
+                          {/* Variants with prices */}
+                          <div className="flex-grow overflow-y-auto max-h-48 pr-2 mb-4 scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50">
+                            {product.variants && product.variants.length > 0 ? (
+                              product.variants.map((variant) => (
+                                <div
+                                  key={variant.id}
+                                  className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 mb-2 last:mb-0"
+                                >
+                                  <span className="text-base font-medium text-green-800">
+                                    {variant.qualityClass}:
+                                  </span>
+                                  <span className="text-lg font-bold text-amber-700">
+                                    ₹{variant.price ? variant.price.toFixed(2) : 'N/A'}
+                                  </span>
+                                </div>
                               ))
+                            ) : (
+                              <p className="text-gray-500 text-sm italic">No variants available.</p>
                             )}
                           </div>
 
