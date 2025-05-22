@@ -29,8 +29,18 @@ public class SpiceService {
 
     @Transactional
     public Spice createSpice(Spice spice) {
-        spice.getVariants().forEach(v -> v.setSpice(spice));
-        spice.getImages().forEach(i -> i.setSpice(spice));
+        if (spice.getVariants() != null) {
+            spice.getVariants().forEach(v -> {
+                v.setSpice(spice); // Link variant to spice
+                if (v.getPacks() != null) {
+                    v.getPacks().forEach(p -> p.setVariant(v)); // Crucial: Link pack to variant
+                }
+            });
+        }
+
+        if (spice.getImages() != null) {
+            spice.getImages().forEach(i -> i.setSpice(spice)); // Link image to spice
+        }
         return spiceRepository.save(spice);
     }
 
@@ -59,7 +69,6 @@ public class SpiceService {
         SpiceDto dto = new SpiceDto();
         dto.setId(s.getId());
         dto.setName(s.getName());
-        dto.setUnit(s.getUnit());
         dto.setDescription(s.getDescription());
         dto.setOrigin(s.getOrigin());
         dto.setIsAvailable(s.getAvailable());
@@ -72,7 +81,18 @@ public class SpiceService {
         );
         dto.setVariants(
                 s.getVariants().stream()
-                        .map(v -> new VariantDto(v.getId(), v.getQualityClass(), v.getPrice()))
+                        .map(v -> new VariantDto(
+                                v.getId(),
+                                v.getQualityClass(),
+                                v.getPacks().stream()
+                                        .map(p -> new PackDto(
+                                                p.getId(),
+                                                p.getPackWeightInGrams(),
+                                                p.getPrice(),
+                                                p.getStockQuantity()
+                                        ))
+                                        .collect(Collectors.toList())
+                        ))
                         .collect(Collectors.toList())
         );
         return dto;
@@ -122,11 +142,12 @@ public class SpiceService {
 
             if (minPrice != null || maxPrice != null) {
                 Join<Spice, SpiceVariant> variantJoin = root.join("variants");
+                Join<SpiceVariant, SpicePack> packJoin = variantJoin.join("packs");
                 if (minPrice != null) {
-                    predicates.add(cb.ge(variantJoin.get("price"), minPrice));
+                    predicates.add(cb.ge(packJoin.get("price"), minPrice));
                 }
                 if (maxPrice != null) {
-                    predicates.add(cb.le(variantJoin.get("price"), maxPrice));
+                    predicates.add(cb.le(packJoin.get("price"), maxPrice));
                 }
             }
 

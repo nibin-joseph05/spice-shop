@@ -12,7 +12,6 @@ import java.util.List;
 public class SpiceDto {
     private Long id;
     private String name;
-    private String unit;
     private String description;
     private String origin;
     private Boolean isAvailable;

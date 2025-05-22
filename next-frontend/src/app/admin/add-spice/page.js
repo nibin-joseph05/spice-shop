@@ -15,11 +15,17 @@ export default function AddSpicePage() {
   const [darkMode] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
-    unit: "grams",
     description: "",
     origin: "",
     isAvailable: true,
-    variants: [{ qualityClass: "", price: "" }],
+    variants: [{
+      qualityClass: "",
+      packs: [{
+        packWeightInGrams: "",
+        price: "",
+        stockQuantity: ""
+      }]
+    }],
     images: [""]
   });
   const [errors, setErrors] = useState({});
@@ -30,15 +36,26 @@ export default function AddSpicePage() {
     const newErrors = {};
 
     if (!formData.name.trim()) newErrors.name = "Spice name is required";
-    if (!formData.unit) newErrors.unit = "Unit selection is required";
 
-    formData.variants.forEach((variant, index) => {
-      if (!variant.qualityClass.trim()) {
-        newErrors[`variantQuality-${index}`] = "Quality class is required";
-      }
-      if (!variant.price || isNaN(variant.price)) {
-        newErrors[`variantPrice-${index}`] = "Valid price is required";
-      }
+    // In AddSpicePage's validateForm
+    formData.variants.forEach((variant, vIndex) => {
+        // Quality class check
+        if (!variant.qualityClass.trim()) {
+            newErrors[`variantQuality-${vIndex}`] = "Quality class is required";
+        }
+
+        // Pack validations
+        variant.packs.forEach((pack, pIndex) => {
+            if (!pack.packWeightInGrams) {
+                newErrors[`packWeight-${vIndex}-${pIndex}`] = "Weight is required";
+            }
+            if (!pack.price || isNaN(pack.price)) {
+                newErrors[`packPrice-${vIndex}-${pIndex}`] = "Valid price is required";
+            }
+            if (!pack.stockQuantity) {
+                newErrors[`packStock-${vIndex}-${pIndex}`] = "Stock quantity is required";
+            }
+        });
     });
 
     formData.images.forEach((image, index) => {
@@ -54,11 +71,17 @@ export default function AddSpicePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Add variant functions
   const addVariant = () => {
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { qualityClass: "", price: "" }]
+      variants: [...prev.variants, {
+        qualityClass: "",
+        packs: [{
+          packWeightInGrams: "",
+          price: "",
+          stockQuantity: ""
+        }]
+      }]
     }));
   };
 
@@ -75,7 +98,14 @@ export default function AddSpicePage() {
 
   const handleVariantChange = (index, e) => {
     const newVariants = [...formData.variants];
-    newVariants[index][e.target.name] = e.target.value;
+
+    // Handle nested pack changes
+    if (e.target.name === "packs") {
+      newVariants[index].packs = e.target.value;
+    } else {
+      newVariants[index][e.target.name] = e.target.value;
+    }
+
     setFormData(prev => ({ ...prev, variants: newVariants }));
   };
 
@@ -130,13 +160,16 @@ export default function AddSpicePage() {
 
       const spiceData = {
         name: formData.name,
-        unit: formData.unit,
         description: formData.description,
         origin: formData.origin,
         isAvailable: formData.isAvailable,
         variants: formData.variants.map(v => ({
-          qualityClass: v.qualityClass,
-          price: parseFloat(v.price)
+            qualityClass: v.qualityClass,
+            packs: v.packs.map(p => ({
+                packWeightInGrams: parseInt(p.packWeightInGrams),
+                price: parseFloat(p.price),
+                stockQuantity: parseInt(p.stockQuantity)
+            }))
         })),
         imageUrls: formData.images.filter(url => url.trim() !== "")
       };
@@ -164,12 +197,18 @@ export default function AddSpicePage() {
 
       setFormData({
         name: "",
-        unit: "grams",
         description: "",
         origin: "",
         isAvailable: true,
-        variants: [{ qualityClass: "", price: "" }],
-        images: [{ type: "url", value: "" }]
+        variants: [{
+          qualityClass: "",
+          packs: [{
+            packWeightInGrams: "",
+            price: "",
+            stockQuantity: ""
+          }]
+        }],
+        images: [""]
       });
       setSuccessMessage("Spice added successfully!");
     } catch (error) {
@@ -241,33 +280,6 @@ export default function AddSpicePage() {
                       onChange={handleInputChange}
                       placeholder="E.g., Organic Turmeric Powder"
                     />
-                  </div>
-
-                  {/* Unit Selection */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Unit *
-                      {errors.unit && (
-                        <span className="ml-2 text-red-500 text-sm">{errors.unit}</span>
-                      )}
-                    </label>
-                    <select
-                      name="unit"
-                      required
-                      className={`w-full px-4 py-2 rounded-lg ${
-                        darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-100 border-gray-300"
-                      } ${errors.unit ? "border-red-500" : ""}`}
-                      value={formData.unit}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select a unit</option>
-                      <option value="grams">Grams</option>
-                      <option value="kilograms">Kilograms</option>
-                      <option value="pieces">Pieces</option>
-                    </select>
-                    <p className="mt-1 text-sm text-gray-400">
-                      This determines how the product is measured and sold
-                    </p>
                   </div>
 
                   <div className="md:col-span-2">

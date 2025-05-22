@@ -10,7 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 public class SpiceRequest {
     private String name;
-    private String unit;
     private String description;
     private String origin;
     private Boolean isAvailable;

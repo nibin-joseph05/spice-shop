@@ -3,6 +3,7 @@ package com.spiceshop.dto;
 
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -10,5 +11,5 @@ import java.math.BigDecimal;
 public class VariantDto {
     private Long id;
     private String qualityClass;
-    private BigDecimal price;
+    private List<PackDto> packs;
 }

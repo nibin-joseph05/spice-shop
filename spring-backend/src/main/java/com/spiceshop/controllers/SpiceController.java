@@ -42,7 +42,6 @@ public class SpiceController {
 
         Spice entity = new Spice();
         entity.setName(req.getName());
-        entity.setUnit(req.getUnit());
         entity.setDescription(req.getDescription());
         entity.setOrigin(req.getOrigin());
         entity.setAvailable(req.getIsAvailable());
@@ -52,7 +51,16 @@ public class SpiceController {
             req.getVariants().forEach(vr -> {
                 SpiceVariant sv = new SpiceVariant();
                 sv.setQualityClass(vr.getQualityClass());
-                sv.setPrice(vr.getPrice());
+
+                // Map packs
+                vr.getPacks().forEach(pr -> {
+                    SpicePack pack = new SpicePack();
+                    pack.setPackWeightInGrams(pr.getPackWeightInGrams());
+                    pack.setPrice(pr.getPrice());
+                    pack.setStockQuantity(pr.getStockQuantity());
+                    sv.getPacks().add(pack);
+                });
+
                 entity.getVariants().add(sv);
             });
         }

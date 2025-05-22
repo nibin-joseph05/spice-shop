@@ -3,7 +3,8 @@ package com.spiceshop.models;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -16,12 +17,16 @@ public class SpiceVariant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String qualityClass;
-    private BigDecimal price;
+    private String qualityClass; // e.g., "Class 1", "Class 2"
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "spice_id")
     private Spice spice;
+
+    // Multiple pack sizes per quality class
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SpicePack> packs = new ArrayList<>();
+
 
     public Long getId() {
         return id;
@@ -39,19 +44,19 @@ public class SpiceVariant {
         this.qualityClass = qualityClass;
     }
 
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
     public Spice getSpice() {
         return spice;
     }
 
     public void setSpice(Spice spice) {
         this.spice = spice;
+    }
+
+    public List<SpicePack> getPacks() {
+        return packs;
+    }
+
+    public void setPacks(List<SpicePack> packs) {
+        this.packs = packs;
     }
 }

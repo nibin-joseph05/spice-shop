@@ -1,10 +1,10 @@
 package com.spiceshop.models;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ public class Spice {
     private Long id;
 
     private String name;
-    private String unit;
+
     private String description;
 
     @OneToMany(mappedBy = "spice", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -37,6 +37,7 @@ public class Spice {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // Variants: different quality classes
     @OneToMany(mappedBy = "spice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SpiceVariant> variants = new ArrayList<>();
 
@@ -56,13 +57,6 @@ public class Spice {
         this.name = name;
     }
 
-    public String getUnit() {
-        return unit;
-    }
-
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
 
     public String getDescription() {
         return description;
@@ -96,20 +90,20 @@ public class Spice {
         isAvailable = available;
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public List<SpiceVariant> getVariants() {
@@ -120,4 +114,3 @@ public class Spice {
         this.variants = variants;
     }
 }
-

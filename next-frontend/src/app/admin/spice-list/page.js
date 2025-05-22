@@ -162,9 +162,7 @@ export default function SpiceListPage() {
                         <div>
                           <span className="text-gray-400">Origin:</span> {spice.origin || 'Origin not provided'}
                         </div>
-                        <div>
-                          <span className="text-gray-400">Unit:</span> {spice.unit}
-                        </div>
+
                       </div>
                     </td>
 
