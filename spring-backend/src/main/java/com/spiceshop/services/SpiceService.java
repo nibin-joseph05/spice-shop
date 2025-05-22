@@ -171,4 +171,39 @@ public class SpiceService {
                 .orElseThrow(() -> new RuntimeException("Spice not found"));
     }
 
+
+    @Transactional
+    public Spice updateSpice(Spice updatedSpice) {
+        Spice existingSpice = spiceRepository.findById(updatedSpice.getId())
+                .orElseThrow(() -> new RuntimeException("Spice not found"));
+
+        // Check for duplicate name excluding current spice
+        String normalizedName = updatedSpice.getName().trim().toLowerCase();
+        spiceRepository.findByNormalizedName(normalizedName)
+                .ifPresent(found -> {
+                    if (!found.getId().equals(updatedSpice.getId())) {
+                        throw new DuplicateSpiceNameException(
+                                "Spice with name '" + updatedSpice.getName() + "' already exists",
+                                found.getId()
+                        );
+                    }
+                });
+
+        // Update relationships
+        if (updatedSpice.getVariants() != null) {
+            updatedSpice.getVariants().forEach(v -> {
+                v.setSpice(updatedSpice);
+                if (v.getPacks() != null) {
+                    v.getPacks().forEach(p -> p.setVariant(v));
+                }
+            });
+        }
+
+        if (updatedSpice.getImages() != null) {
+            updatedSpice.getImages().forEach(i -> i.setSpice(updatedSpice));
+        }
+
+        return spiceRepository.save(updatedSpice);
+    }
+
 }

@@ -4,23 +4,18 @@ package com.spiceshop.controllers;
 import com.spiceshop.dto.*;
 import com.spiceshop.models.*;
 import com.spiceshop.services.SpiceService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import com.spiceshop.exceptions.DuplicateSpiceNameException;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 
 @RestController
 @RequestMapping("/api")
@@ -86,8 +81,6 @@ public class SpiceController {
         }
     }
 
-
-
     @GetMapping("/spices")
     public ResponseEntity<List<SpiceDto>> getAllSpices() {
         List<Spice> spices = spiceService.getAllSpices();
@@ -120,7 +113,6 @@ public class SpiceController {
                     .body(null);
         }
     }
-
 
     @GetMapping("/products")
     public ResponseEntity<Map<String, Object>> getProducts(
@@ -161,6 +153,61 @@ public class SpiceController {
     }
 
 
+    @PutMapping("/spices/{id}")
+    public ResponseEntity<?> updateSpice(
+            @PathVariable Long id,
+            @RequestBody SpiceRequest req
+    ) {
+        try {
+            Spice existingSpice = spiceService.getSpiceById(id);
 
+            // Update basic fields
+            existingSpice.setName(req.getName());
+            existingSpice.setDescription(req.getDescription());
+            existingSpice.setOrigin(req.getOrigin());
+
+            // Handle variants
+            existingSpice.getVariants().clear();
+            if (req.getVariants() != null) {
+                req.getVariants().forEach(vr -> {
+                    SpiceVariant sv = new SpiceVariant();
+                    sv.setQualityClass(vr.getQualityClass());
+
+                    if (vr.getPacks() != null) {
+                        vr.getPacks().forEach(pr -> {
+                            SpicePack pack = new SpicePack();
+                            pack.setPackWeightInGrams(pr.getPackWeightInGrams());
+                            pack.setPrice(pr.getPrice());
+                            pack.setStockQuantity(pr.getStockQuantity());
+                            sv.getPacks().add(pack);
+                        });
+                    }
+                    existingSpice.getVariants().add(sv);
+                });
+            }
+
+            // Handle images
+            existingSpice.getImages().clear();
+            if (req.getImageUrls() != null) {
+                req.getImageUrls().forEach(url -> {
+                    SpiceImage si = new SpiceImage();
+                    si.setImageUrl(url);
+                    existingSpice.getImages().add(si);
+                });
+            }
+
+            Spice updated = spiceService.updateSpice(existingSpice);
+            return ResponseEntity.ok(spiceService.toDto(updated));
+
+        } catch (DuplicateSpiceNameException ex) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", ex.getMessage());
+            errorResponse.put("existingId", ex.getExistingId());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Error updating spice: " + e.getMessage()));
+        }
+    }
 
 }
