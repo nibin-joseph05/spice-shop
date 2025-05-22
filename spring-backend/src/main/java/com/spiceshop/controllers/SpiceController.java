@@ -149,6 +149,18 @@ public class SpiceController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/spices/{id}")
+    public ResponseEntity<?> deleteSpice(@PathVariable Long id) {
+        try {
+            spiceService.deleteSpice(id);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Spice not found with id: " + id));
+        }
+    }
+
+
 
 
 }
