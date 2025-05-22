@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.spiceshop.exceptions.DuplicateSpiceNameException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.*;
@@ -33,51 +33,59 @@ public class SpiceController {
     private final Path uploadDir = Paths.get("uploads/spices").toAbsolutePath().normalize();
 
     @PostMapping("/spices")
-    public ResponseEntity<SpiceDto> createSpice(
-            @RequestPart("spice") String spiceJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files
-    ) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        SpiceRequest req = mapper.readValue(spiceJson, SpiceRequest.class);
+    public ResponseEntity<?> createSpice(@RequestBody SpiceRequest req) {
+        try {
+            Spice entity = new Spice();
+            entity.setName(req.getName());
+            entity.setDescription(req.getDescription());
+            entity.setOrigin(req.getOrigin());
+            entity.setAvailable(req.getIsAvailable());
 
-        Spice entity = new Spice();
-        entity.setName(req.getName());
-        entity.setDescription(req.getDescription());
-        entity.setOrigin(req.getOrigin());
-        entity.setAvailable(req.getIsAvailable());
+            // Map variants
+            if (req.getVariants() != null) {
+                req.getVariants().forEach(vr -> {
+                    SpiceVariant sv = new SpiceVariant();
+                    sv.setQualityClass(vr.getQualityClass());
 
-        // map variants
-        if (req.getVariants() != null) {
-            req.getVariants().forEach(vr -> {
-                SpiceVariant sv = new SpiceVariant();
-                sv.setQualityClass(vr.getQualityClass());
+                    // Map packs
+                    if (vr.getPacks() != null) {
+                        vr.getPacks().forEach(pr -> {
+                            SpicePack pack = new SpicePack();
+                            pack.setPackWeightInGrams(pr.getPackWeightInGrams());
+                            pack.setPrice(pr.getPrice());
+                            pack.setStockQuantity(pr.getStockQuantity());
+                            sv.getPacks().add(pack);
+                        });
+                    }
 
-                // Map packs
-                vr.getPacks().forEach(pr -> {
-                    SpicePack pack = new SpicePack();
-                    pack.setPackWeightInGrams(pr.getPackWeightInGrams());
-                    pack.setPrice(pr.getPrice());
-                    pack.setStockQuantity(pr.getStockQuantity());
-                    sv.getPacks().add(pack);
+                    entity.getVariants().add(sv);
                 });
+            }
 
-                entity.getVariants().add(sv);
-            });
+            // Map images
+            if (req.getImageUrls() != null) {
+                req.getImageUrls().forEach(url -> {
+                    SpiceImage si = new SpiceImage();
+                    si.setImageUrl(url);
+                    entity.getImages().add(si);
+                });
+            }
+
+            Spice saved = spiceService.createSpice(entity);
+            SpiceDto dto = spiceService.toDto(saved);
+            return ResponseEntity.ok(dto);
+
+        } catch (DuplicateSpiceNameException ex) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", ex.getMessage());
+            errorResponse.put("existingId", ex.getExistingId());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error creating spice: " + e.getMessage()));
         }
-
-        // map JSON URLs
-        if (req.getImageUrls() != null) {
-            req.getImageUrls().forEach(url -> {
-                SpiceImage si = new SpiceImage();
-                si.setImageUrl(url);
-                entity.getImages().add(si);
-            });
-        }
-
-        Spice saved = spiceService.createSpice(entity);
-        SpiceDto dto = spiceService.toDto(saved);
-        return ResponseEntity.ok(dto);
     }
+
 
 
     @GetMapping("/spices")
@@ -89,14 +97,13 @@ public class SpiceController {
         return ResponseEntity.ok(dtos);
     }
 
-    @DeleteMapping("/spices/{id}")
-    public ResponseEntity<?> deleteSpice(@PathVariable Long id) {
+    @GetMapping("/spices/{id}")
+    public ResponseEntity<SpiceDto> getSpiceById(@PathVariable Long id) {
         try {
-            spiceService.deleteSpice(id);
-            return ResponseEntity.noContent().build();
+            Spice spice = spiceService.getSpiceById(id);
+            return ResponseEntity.ok(spiceService.toDto(spice));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Spice not found with id: " + id));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 

@@ -1,6 +1,7 @@
 // com.spiceshop.services.SpiceService.java
 package com.spiceshop.services;
 
+import com.spiceshop.exceptions.DuplicateSpiceNameException;
 import com.spiceshop.dto.*;
 import com.spiceshop.models.*;
 import com.spiceshop.repositorys.SpiceRepository;
@@ -29,6 +30,15 @@ public class SpiceService {
 
     @Transactional
     public Spice createSpice(Spice spice) {
+
+        String normalizedName = spice.getName().trim().toLowerCase();
+
+        spiceRepository.findByNormalizedName(normalizedName)
+                .ifPresent(existing -> {
+                    throw new DuplicateSpiceNameException("Spice with name '" + spice.getName() + "' already exists", existing.getId());
+                });
+
+
         if (spice.getVariants() != null) {
             spice.getVariants().forEach(v -> {
                 v.setSpice(spice); // Link variant to spice
@@ -154,6 +164,11 @@ public class SpiceService {
             query.distinct(true);
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    public Spice getSpiceById(Long id) {
+        return spiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Spice not found"));
     }
 
 }
