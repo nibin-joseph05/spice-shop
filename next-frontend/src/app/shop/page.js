@@ -322,23 +322,31 @@ export default function Shop() {
                   viewport={{ once: true, amount: 0.2 }} // Trigger animation when 20% of element is in view
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
                 >
-                  {products.map((product) => {
+                  {products.map((product, index) => {
+                    const isProductOutOfStock = product.variants.every(variant =>
+                        variant.packs.every(pack => pack.stockQuantity === 0)
+                    );
+
+
                     return (
                       <motion.div
                         key={product.id}
                         variants={itemVariants}
                         className="group bg-white rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden border border-gray-100 relative flex flex-col"
-                        // Removed onClick from the entire card
                       >
                         <div className="relative h-64 w-full flex-shrink-0 bg-gray-100 flex items-center justify-center">
                           <Image
-                            src={product.imageUrls?.[0] || "https://placehold.co/600x400/E0E0E0/FFFFFF?text=No+Image"}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                            className="object-contain group-hover:scale-105 transition-transform duration-300 ease-in-out p-2"
-                          />
-                          {!product.isAvailable && (
+                              src={product.imageUrls?.[0] || "https://placehold.co/600x400/E0E0E0/FFFFFF?text=No+Image"}
+                              alt={product.name}
+                              fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                              className="object-contain group-hover:scale-105 transition-transform duration-300 ease-in-out p-2"
+                              priority={index < 4}
+                              onError={(e) => {
+                                e.target.src = "https://placehold.co/600x400/E0E0E0/FFFFFF?text=No+Image";
+                              }}
+                            />
+                          {isProductOutOfStock && (
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-t-xl">
                               <span className="text-white text-xl font-bold tracking-wide">OUT OF STOCK</span>
                             </div>
@@ -352,12 +360,15 @@ export default function Shop() {
                             {product.description}
                           </p>
 
-                          {/* Displaying the base unit */}
-                          <div className="flex justify-end items-center mb-3">
-                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                              {product.unit}
-                            </span>
-                          </div>
+                          {/* Displaying the base unit if applicable, otherwise omit or use a placeholder */}
+                          {product.unit && ( // Assuming 'unit' might be a top-level field for the spice type
+                              <div className="flex justify-end items-center mb-3">
+                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                  {product.unit}
+                                </span>
+                              </div>
+                          )}
+
 
                           {/* Origin Badge */}
                           <div className="flex flex-wrap gap-2 mb-3">
@@ -368,28 +379,51 @@ export default function Shop() {
                             )}
                           </div>
 
-                          {/* Variants with prices */}
+                          {/* Variants with packs and prices */}
                           <div className="flex-grow overflow-y-auto max-h-48 pr-2 mb-4 scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50">
                             {product.variants && product.variants.length > 0 ? (
                               product.variants.map((variant) => (
-                                <div
-                                  key={variant.id}
-                                  className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 mb-2 last:mb-0"
-                                >
-                                  <span className="text-base font-medium text-green-800">
-                                    {variant.qualityClass}:
-                                  </span>
-                                  <span className="text-lg font-bold text-amber-700">
-                                    ₹{variant.price ? variant.price.toFixed(2) : 'N/A'}
-                                  </span>
+                                <div key={variant.id || `${product.id}-${variant.qualityClass}`}> {/* Use variant.id or a composite key */}
+                                  <h4 className="text-base font-semibold text-green-800 mb-1 mt-2 first:mt-0">
+                                    {variant.qualityClass}
+                                  </h4>
+                                  {variant.packs && variant.packs.length > 0 ? (
+                                    variant.packs.map((pack) => (
+                                      <div
+                                        key={pack.id || `${variant.id}-${pack.packWeightInGrams}`} // Use pack.id if available, or composite
+                                        className="flex justify-between items-center bg-green-50 p-2 rounded-lg border border-green-100 mb-1 last:mb-0"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-green-700">
+                                                {pack.packWeightInGrams}g
+                                            </span>
+                                            {pack.stockQuantity <= 10 && pack.stockQuantity > 0 && (
+                                                <span className="text-xs text-amber-600 font-semibold">
+                                                    (Only {pack.stockQuantity} left!)
+                                                </span>
+                                            )}
+                                            {pack.stockQuantity === 0 && (
+                                                <span className="text-xs text-red-600 font-semibold">
+                                                    (Out of Stock)
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-base font-bold text-amber-700">
+                                          ₹{pack.price ? pack.price.toFixed(2) : 'N/A'}
+                                        </span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-gray-500 text-sm italic ml-4">No packs for this variant.</p>
+                                  )}
                                 </div>
                               ))
                             ) : (
-                              <p className="text-gray-500 text-sm italic">No variants available.</p>
+                              <p className="text-gray-500 text-sm italic">No variants available for this product.</p>
                             )}
                           </div>
 
-                          {/* Rating and Reviews */}
+                          {/* Rating and Reviews - Assuming these are top-level on productDto or fetched separately */}
                           <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
@@ -401,7 +435,7 @@ export default function Shop() {
                                   fill="currentColor"
                                   viewBox="0 0 20 20"
                                 >
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 00.951-.69l1.07-3.292z" />
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
                               ))}
                             </div>

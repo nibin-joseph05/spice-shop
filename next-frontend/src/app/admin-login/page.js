@@ -166,7 +166,7 @@ export default function AdminLogin() {
                 <p className="mt-3 text-sm text-green-600">
                   User login?{' '}
                   <a
-                    href="/my-account"
+                    href="/"
                     className="font-semibold text-amber-700 hover:text-amber-800"
                   >
                     Switch to User Portal
