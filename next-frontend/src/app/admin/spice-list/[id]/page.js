@@ -41,7 +41,7 @@ export default function SpiceDetailsPage({ params: paramsPromise }) {
           const errorData = await response.json().catch(() => ({ message: 'Deletion failed on the server.' }));
           throw new Error(errorData.message || 'Deletion failed on the server.');
         }
-        router.push('/admin/spices'); // Redirect to spice list on successful delete
+        router.push('/admin/spice-list'); // Redirect to spice list on successful delete
       } catch (err) {
         setError(`Deletion failed: ${err.message}`);
       }
