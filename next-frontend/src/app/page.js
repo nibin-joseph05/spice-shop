@@ -469,6 +469,78 @@ export default function Home() {
           </div>
         </section>
 
+
+        {/* A Glimpse of Our Premium Spices Section */}
+        <section className="py-16">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "0px 0px -100px 0px" }}
+              variants={fadeIn}
+              className="relative mb-12 text-center"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-green-900 inline-block relative">
+                A Glimpse of Our Premium Spices
+                <span className="absolute -bottom-3 left-0 right-0 mx-auto w-32 h-1.5 bg-amber-600 rounded-full"></span>
+              </h2>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto">
+                Experience the visual richness of our high-quality spices sourced directly from Kerala.
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              {[
+                "https://images.unsplash.com/photo-1581600140682-d4e68c8cde32?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3BpY2V8ZW58MHx8MHx8fDA%3D",
+                "https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8c3BpY2V8ZW58MHx8MHx8fDA%3D",
+                "https://images.unsplash.com/photo-1517646458010-ea6bd9f4a75f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHNwaWNlfGVufDB8fDB8fHww",
+                "https://plus.unsplash.com/premium_photo-1661337223133-a92f4f68d001?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8c3BpY2V8ZW58MHx8MHx8fDA%3D",
+                "https://images.unsplash.com/photo-1592457711340-2412dc07b733?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHNwaWNlfGVufDB8fDB8fHww",
+                "https://plus.unsplash.com/premium_photo-1672076780330-ae81962ee3ce?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fHNwaWNlfGVufDB8fDB8fHww",
+                "https://media.istockphoto.com/id/979264404/photo/ground-black-pepper.webp",
+                "https://media.istockphoto.com/id/518709136/photo/green-cardamom-pods-in-steel-bowl.webp"
+              ].map((src, index) => (
+                <motion.div
+                  key={index}
+                  variants={itemVariants}
+                  className="relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 aspect-square"
+                >
+                  <div className="w-full h-full relative">
+                    <Image
+                      src={src}
+                      alt="Spice image"
+                      fill
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="object-cover transform hover:scale-105 transition-transform duration-300 ease-in-out"
+                      onError={(e) => {
+                        e.target.src = '/spice-fallback/spice-placeholder.webp';
+                        e.target.srcset = '/spice-fallback/spice-placeholder.webp';
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <div className="text-center mt-8">
+              <Link href="/shop" passHref>
+                <button className="inline-flex items-center px-6 py-3 bg-green-800 text-white rounded-lg shadow-lg hover:bg-green-900 transition-colors transform hover:-translate-y-1">
+                  <span>Explore Our Full Collection</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Call to Action */}
         <section className="py-16 bg-green-900 text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
