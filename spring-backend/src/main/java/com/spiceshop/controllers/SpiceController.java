@@ -210,4 +210,12 @@ public class SpiceController {
         }
     }
 
+    // Get distinct quality classes from variants
+    @GetMapping("/quality-classes")
+    public ResponseEntity<List<String>> getUniqueQualityClasses() {
+        List<String> qualityClasses = spiceService.getUniqueQualityClasses();
+        return ResponseEntity.ok(qualityClasses);
+    }
+
+
 }

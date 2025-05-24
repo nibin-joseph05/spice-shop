@@ -147,7 +147,15 @@ public class SpiceService {
 
             if (qualityClasses != null && !qualityClasses.isEmpty()) {
                 Join<Spice, SpiceVariant> variantJoin = root.join("variants");
-                predicates.add(variantJoin.get("qualityClass").in(qualityClasses));
+                List<Predicate> qualityClassPredicates = new ArrayList<>();
+                for (String qc : qualityClasses) {
+                    // Normalize the incoming filter value
+                    String normalizedQc = qc.trim().toLowerCase();
+                    // Create a predicate to compare the normalized DB value with the normalized filter value
+                    qualityClassPredicates.add(cb.equal(cb.lower(cb.trim(variantJoin.get("qualityClass"))), normalizedQc));
+                }
+                // Combine all quality class predicates with an OR (match any of the selected classes)
+                predicates.add(cb.or(qualityClassPredicates.toArray(new Predicate[0])));
             }
 
             if (minPrice != null || maxPrice != null) {
@@ -205,5 +213,13 @@ public class SpiceService {
 
         return spiceRepository.save(updatedSpice);
     }
+
+    public List<String> getUniqueQualityClasses() {
+        return spiceRepository.findDistinctQualityClasses().stream()
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
 
 }

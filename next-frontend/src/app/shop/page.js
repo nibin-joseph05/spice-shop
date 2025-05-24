@@ -1,4 +1,5 @@
-'use client';
+"use client";
+
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
@@ -7,13 +8,13 @@ import Footer from '@/components/home/Footer';
 import Image from 'next/image';
 import { debounce } from 'lodash';
 
-// Animation variants
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08, // Slightly faster stagger for a snappier feel
+      staggerChildren: 0.08,
       delayChildren: 0.1
     }
   }
@@ -27,9 +28,9 @@ const itemVariants = {
     scale: 1,
     transition: {
       type: "spring",
-      stiffness: 120, // Slightly stiffer spring
+      stiffness: 120,
       damping: 15,
-      mass: 0.5 // Added mass for a more natural bounce
+      mass: 0.5
     }
   }
 };
@@ -49,24 +50,47 @@ export default function Shop() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [availableQualityClasses, setAvailableQualityClasses] = useState([]);
+
+
+  // Fetch filter options on component mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const qualityRes = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/quality-classes`
+        );
+        const qualityClasses = await qualityRes.json();
+        // Normalize and deduplicate on frontend for extra safety
+        const uniqueClasses = [...new Set(qualityClasses.map(c => c.trim().toLowerCase()))]
+          .sort()
+          .map(lc =>
+            qualityClasses.find(c => c.trim().toLowerCase() === lc) // Preserve original casing
+          );
+        setAvailableQualityClasses(uniqueClasses);
+      } catch (err) {
+        console.error('Failed to fetch quality classes:', err);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+
+
   const [filters, setFilters] = useState({
     search: '',
     minPrice: '',
     maxPrice: '',
     qualityClass: [],
-    inStock: null // Initial state: null (no filter applied for stock)
+    inStock: null
   });
 
-  // Available filter options
-  const filterOptions = {
-    qualityClasses: ['Premium', 'Standard', 'Economy', 'Organic', 'Handpicked', 'Super Premium']
-  };
+
 
   const fetchProducts = useCallback(
     debounce(async (page = 1) => {
       try {
-        setLoading(true); // Set loading true at the start of fetch
-        setError(''); // Clear previous errors
+        setLoading(true);
+        setError('');
 
         const queryParams = {
           page,
@@ -75,7 +99,8 @@ export default function Shop() {
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           qualityClass: filters.qualityClass,
-          inStock: filters.inStock // This will be null, true, or false
+          origin: filters.origin,
+          inStock: filters.inStock
         };
 
         // Filter out null, undefined, empty string, and empty array values
@@ -119,34 +144,37 @@ export default function Shop() {
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
       const newFilters = { ...prev };
-      if (filterType === 'inStock') {
-        // Toggle logic for inStock: null (no filter) -> true (in stock) -> false (out of stock) -> null
-        if (prev.inStock === null) {
-          newFilters.inStock = true; // Filter for in-stock
-        } else if (prev.inStock === true) {
-          newFilters.inStock = false; // Filter for out-of-stock
-        } else { // prev.inStock === false
-          newFilters.inStock = null; // No stock filter
+      if (filterType === 'qualityClass') {
+        const normalizedValue = value.trim().toLowerCase();
+        const currentValues = newFilters.qualityClass.map(v => v.trim().toLowerCase());
+        newFilters.qualityClass = currentValues.includes(normalizedValue)
+          ? newFilters.qualityClass.filter(v => v.trim().toLowerCase() !== normalizedValue)
+          : [...newFilters.qualityClass, value];
+          
+        } else if (filterType === 'inStock') {
+          if (prev.inStock === null) {
+            newFilters.inStock = true;
+          } else if (prev.inStock === true) {
+            newFilters.inStock = false;
+          } else {
+            newFilters.inStock = null;
+          }
+        } else { // This handles 'search', 'minPrice', 'maxPrice'
+          newFilters[filterType] = value;
         }
-      } else if (Array.isArray(newFilters[filterType])) {
-        newFilters[filterType] = newFilters[filterType].includes(value)
-          ? newFilters[filterType].filter(item => item !== value)
-          : [...newFilters[filterType], value];
-      } else {
-        newFilters[filterType] = value;
-      }
-      return newFilters;
-    });
-    setCurrentPage(1);
-  };
+        return newFilters;
+      });
+      setCurrentPage(1);
+    };
 
   const resetFilters = () => {
     setFilters({
       search: '',
       minPrice: '',
       maxPrice: '',
-      qualityClass: [],
-      inStock: null // Reset to no filter
+      qualityClass: [], // Ensure this remains an array
+      origin: [], // Ensure this remains an array when resetting
+      inStock: null
     });
     setCurrentPage(1);
   };
@@ -164,94 +192,102 @@ export default function Shop() {
 
   const inStockButtonProps = getInStockButtonProps();
 
-  // Function to handle viewing product details
+
   const handleViewDetails = (productId) => {
-    // In a real Next.js app, you would use router.push(`/products/${productId}`);
+
     console.log(`Navigating to product details for ID: ${productId}`);
-    // For demonstration, you could simulate a navigation or open a modal
-    // window.location.href = `/products/${productId}`; // This would cause a full page reload
+
   };
 
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
 
-      <main className="flex-grow">
-        {/* Filters Section */}
-        <section className="bg-gradient-to-r from-green-50 to-emerald-100 py-8 shadow-inner">
-          <div className="container mx-auto px-6">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeIn}
-              className="flex flex-col md:flex-row gap-4 items-center md:items-start flex-wrap"
-            >
-              {/* Search Input */}
-              <div className="w-full md:w-auto flex-grow">
-                <input
-                  type="text"
-                  placeholder="Search spices by name or description..."
-                  className="w-full px-4 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                />
-              </div>
-
-              {/* Price Filter */}
-              <div className="flex flex-col sm:flex-row gap-2 items-center w-full md:w-auto">
-                <input
-                  type="number"
-                  placeholder="Min price"
-                  className="w-full sm:w-28 px-3 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
-                  value={filters.minPrice}
-                  onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                />
-                <span className="text-gray-600 text-lg hidden sm:block">-</span>
-                <input
-                  type="number"
-                  placeholder="Max price"
-                  className="w-full sm:w-28 px-3 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
-                  value={filters.maxPrice}
-                  onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                />
-              </div>
-
-              {/* Quality Class Filter Badges */}
-              <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                {filterOptions.qualityClasses.map(qc => (
-                  <button
-                    key={qc}
-                    onClick={() => handleFilterChange('qualityClass', qc)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
-                      ${ filters.qualityClass.includes(qc)
-                        ? 'bg-amber-600 text-white shadow-md'
-                        : 'bg-green-200 text-green-800 hover:bg-green-300'
-                      }`}
-                  >
-                    {qc}
-                  </button>
-                ))}
-              </div>
-
-              {/* In Stock Filter Button */}
-              <button
-                onClick={() => handleFilterChange('inStock', null)} // Value doesn't matter for toggle
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
-                  ${inStockButtonProps.className}`}
+        <main className="flex-grow">
+          {/* Filters Section */}
+          <section className="bg-gradient-to-r from-green-50 to-emerald-100 py-8 shadow-inner">
+            <div className="container mx-auto px-6">
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeIn}
+                className="flex flex-col md:flex-row gap-4 items-center md:items-start flex-wrap"
               >
-                {inStockButtonProps.text}
-              </button>
+                {/* Search Input */}
+                <div className="w-full md:w-auto flex-grow">
+                  <input
+                    type="text"
+                    placeholder="Search spices by name or description..."
+                    className="w-full px-4 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                  />
+                </div>
 
-              <button
-                onClick={resetFilters}
-                className="ml-auto px-6 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors duration-200 font-medium"
-              >
-                Clear Filters
-              </button>
-            </motion.div>
-          </div>
-        </section>
+                {/* Price Filter */}
+                <div className="flex flex-col sm:flex-row gap-2 items-center w-full md:w-auto">
+                  <input
+                    type="number"
+                    placeholder="Min price"
+                    className="w-full sm:w-28 px-3 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
+                    value={filters.minPrice}
+                    onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                  />
+                  <span className="text-gray-600 text-lg hidden sm:block">-</span>
+                  <input
+                    type="number"
+                    placeholder="Max price"
+                    className="w-full sm:w-28 px-3 py-2 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition-all duration-200"
+                    value={filters.maxPrice}
+                    onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                  />
+                </div>
+
+                {/* Quality Class Filter - Corrected Implementation */}
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                  {availableQualityClasses.map(qc => {
+                    const normalizedQC = qc.trim().toLowerCase();
+                    const isActive = filters.qualityClass
+                      .map(f => f.trim().toLowerCase())
+                      .includes(normalizedQC);
+
+                    return (
+                      <button
+                        key={qc}
+                        onClick={() => handleFilterChange('qualityClass', qc)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
+                          ${isActive
+                            ? 'bg-amber-600 text-white shadow-md'
+                            : 'bg-green-200 text-green-800 hover:bg-green-300'
+                          }`}
+                      >
+                        {qc}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* In Stock Filter Button */}
+                <button
+                  onClick={() => handleFilterChange('inStock', null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
+                    ${inStockButtonProps.className}`}
+                >
+                  {inStockButtonProps.text}
+                </button>
+
+                <button
+                  onClick={resetFilters}
+                  className="ml-auto px-6 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors duration-200 font-medium"
+                >
+                  Clear Filters
+                </button>
+              </motion.div>
+            </div>
+          </section>
+
 
         {/* Products Grid */}
         <section className="py-12 bg-white">
