@@ -7,6 +7,7 @@ import Footer from '@/components/home/Footer';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import Image from 'next/image';
 import { debounce } from 'lodash';
+import Link from 'next/link'; // Import Link for navigation
 
 // Animation variants
 const containerVariants = {
@@ -42,12 +43,12 @@ const fadeIn = {
 };
 
 export default function Home() {
-  const [spices, setSpices] = useState([]); // Renamed from products to spices for clarity on this page
+  const [spices, setSpices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredSpices, setFilteredSpices] = useState([]);
+  const [featuredSpices, setFeaturedSpices] = useState([]); // State for featured spices
 
   useEffect(() => {
     setIsClient(true);
@@ -60,9 +61,8 @@ export default function Home() {
     const fetchSpices = async () => {
       try {
         setLoading(true);
-        // Ensure this endpoint returns the data structure you expect (SpiceDto/ProductDto)
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices`, // Assuming this returns a list of SpiceDto-like objects
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices`,
           { signal }
         );
 
@@ -70,7 +70,9 @@ export default function Home() {
 
         const data = await response.json();
         setSpices(data);
-        setFilteredSpices(data);
+        // Select a limited number of spices to feature on the homepage
+        // For example, display the first 6 or fewer if not enough are available
+        setFeaturedSpices(data.slice(0, 6));
       } catch (err) {
         if (err.name !== 'AbortError') {
           setError(err.message);
@@ -87,26 +89,7 @@ export default function Home() {
     };
   }, []);
 
-  const debouncedSearch = useCallback(
-    debounce((term) => {
-      if (!term.trim()) {
-        setFilteredSpices(spices);
-        return;
-      }
-
-      const filtered = spices.filter(spice =>
-        spice.name.toLowerCase().includes(term.toLowerCase()) ||
-        (spice.description && spice.description.toLowerCase().includes(term.toLowerCase()))
-      );
-
-      setFilteredSpices(filtered);
-    }, 300),
-    [spices]
-  );
-
-  useEffect(() => {
-    debouncedSearch(searchTerm);
-  }, [searchTerm, debouncedSearch]);
+  // Removed debouncedSearch and filteredSpices as they are not needed for featured display
 
   if (!isClient) return null;
 
@@ -183,10 +166,10 @@ export default function Home() {
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }} // Adjusted amount for better visibility
+              viewport={{ once: true, amount: 0.2 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {filteredSpices.map((spice, index) => (
+              {featuredSpices.map((spice, index) => ( // Use featuredSpices here
                 <motion.div
                   key={spice.id}
                   variants={itemVariants}
@@ -197,21 +180,19 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 to-transparent z-20" />
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/10 z-30" />
                     <Image
-                        src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
-                        alt={spice.name}
-                        width={400}
-                        height={300}
-                        className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 ease-out"
-                        // Add onError for fallback
-                        onError={(e) => {
-                          e.target.src = '/spice-fallback/spice-placeholder.webp'; // Fallback to local image
-                          e.target.srcset = '/spice-fallback/spice-placeholder.webp'; // Ensure srcset is also updated
-                        }}
-                        priority={index < 3} // Add priority to the first 3 images for LCP
-                      />
+                      src={spice.imageUrls?.[0] || '/spice-fallback/spice-placeholder.webp'}
+                      alt={spice.name}
+                      width={400}
+                      height={300}
+                      className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 ease-out"
+                      onError={(e) => {
+                        e.target.src = '/spice-fallback/spice-placeholder.webp';
+                        e.target.srcset = '/spice-fallback/spice-placeholder.webp';
+                      }}
+                      priority={index < 3}
+                    />
                     <div className="absolute top-4 right-4 z-40 flex gap-2">
-                      {/* Example dynamic badge based on spice properties */}
-                      {spice.qualityClass === 'Organic' && ( // Assuming a 'qualityClass' property exists
+                      {spice.qualityClass === 'Organic' && (
                         <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-md backdrop-blur-sm">
                           Organic
                         </span>
@@ -223,7 +204,6 @@ export default function Home() {
                     <div className="absolute bottom-4 left-4 z-30">
                       <span className="bg-white/90 text-green-900 px-3 py-1 rounded-full text-sm font-medium shadow-sm flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
-                          {/* Corrected SVG path for star */}
                           <path fillRule="evenodd" d="M6.267 3.455c1.277-.552 2.593-.827 3.97-.827 1.377 0 2.693.275 3.97.827l.328.588c.36.646.54.969.82 1.182.28.213.63.292 1.33.45l.636.144c2.46.557 3.689.835 3.982 1.776.292.94-.546 1.921-2.223 3.882l-.434.507c-.476.557-.715.836-.822 1.18-.107.345-.071.717.001 1.46l.066.677c.253 2.617.38 3.925-.386 4.506-.766.582-1.918.051-4.22-1.009l-.597-.274c-.654-.302-.981-.452-1.328-.452-.347 0-.674.15-1.329.452l-.595.274c-2.303 1.06-3.455 1.59-4.22 1.01-.767-.582-.64-1.89-.387-4.507l.066-.676c.072-.744.108-1.116 0-1.46-.106-.345-.345-.624-.821-1.18l-.434-.508c-1.677-1.96-2.515-2.941-2.223-3.882.293-.94 1.523-1.22 3.983-1.776l.636-.144c.699-.158 1.048-.237 1.329-.45.28-.213.46-.536.82-1.182l.328-.588zM9 10.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L9 10.586z" clipRule="evenodd" />
                         </svg>
                         Freshness Guarantee
@@ -245,7 +225,6 @@ export default function Home() {
                         </svg>
                         <span>Origin: {spice.origin || 'Kerala'}</span>
                       </div>
-                      {/* Assuming heatLevel is a property of SpiceDto if you want to display it */}
                       {spice.heatLevel && (
                         <div className="flex items-center text-sm text-amber-700 mb-3">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -259,14 +238,14 @@ export default function Home() {
                     <div className="h-48 overflow-y-auto pr-2 mb-5 scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50">
                       {spice.variants && spice.variants.length > 0 ? (
                         spice.variants.map((variant, i) => (
-                          <div key={variant.id || `${spice.id}-${variant.qualityClass}-${i}`}> {/* Use variant.id or a composite key */}
+                          <div key={variant.id || `${spice.id}-${variant.qualityClass}-${i}`}>
                             <div className="text-sm font-semibold text-green-900 mb-2 mt-2 first:mt-0">
                               {variant.qualityClass}
                             </div>
                             {variant.packs && variant.packs.length > 0 ? (
                               variant.packs.map((pack, j) => (
                                 <motion.div
-                                  key={pack.id || `${variant.id}-${pack.packWeightInGrams}-${j}`} // Use pack.id if available, or composite
+                                  key={pack.id || `${variant.id}-${pack.packWeightInGrams}-${j}`}
                                   whileHover={{ scale: 1.02 }}
                                   className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 hover:border-green-200 transition-all mb-3 last:mb-0"
                                 >
@@ -303,26 +282,42 @@ export default function Home() {
                       )}
                     </div>
 
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
-                    >
-                      <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                      </svg>
-                      <span>Add to Cart</span>
-                      <span className="absolute right-0 w-8 h-full bg-white/20 transform -skew-x-12 translate-x-12 group-hover:translate-x-[-100px] transition-all duration-500"></span>
-                    </motion.button>
+                    <Link href={`/product/${spice.id}`} passHref>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"
+                      >
+                        <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                        </svg>
+                        <span>View Details</span>
+                        <span className="absolute right-0 w-8 h-full bg-white/20 transform -skew-x-12 translate-x-12 group-hover:translate-x-[-100px] transition-all duration-500"></span>
+                      </motion.button>
+                    </Link>
                   </div>
                 </motion.div>
               ))}
-              {filteredSpices.length === 0 && !loading && !error && (
+              {featuredSpices.length === 0 && !loading && !error && (
                 <div className="md:col-span-3 text-center py-10 text-gray-500">
-                  No spices found matching your search.
+                  No spices found to feature.
                 </div>
               )}
             </motion.div>
+
+            {spices.length > featuredSpices.length && (
+              <div className="text-center mt-12">
+                <Link href="/shop" passHref>
+                  <button className="inline-flex items-center px-8 py-4 bg-green-800 text-white rounded-lg shadow-lg hover:bg-green-900 transition-colors transform hover:-translate-y-1">
+                    <span>View All Spices</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 
@@ -338,7 +333,6 @@ export default function Home() {
             >
               <h2 className="text-3xl md:text-4xl font-bold text-green-900 mb-6 relative inline-block">
                 Our Quality Promise
-                {/* Corrected SVG path for star */}
                 <svg className="absolute -top-6 -right-12 text-amber-400 w-10 h-10 opacity-70" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
@@ -435,7 +429,6 @@ export default function Home() {
                 >
                   <div className="absolute -top-4 right-6 bg-amber-500 text-white rounded-full p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      {/* Corrected SVG path for star */}
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   </div>
@@ -456,7 +449,6 @@ export default function Home() {
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
-                        {/* Corrected SVG path for star */}
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
@@ -505,9 +497,11 @@ export default function Home() {
                 with our premium, ethically-sourced spices.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex-1 w-full sm:w-auto">
-                  Shop Now
-                </button>
+                <Link href="/shop" passHref>
+                  <button className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex-1 w-full sm:w-auto">
+                    Shop Now
+                  </button>
+                </Link>
                 <button className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white hover:text-green-900 transition-all flex-1 w-full sm:w-auto">
                   Learn More
                 </button>
