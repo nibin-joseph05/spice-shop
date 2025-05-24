@@ -84,8 +84,6 @@ export default function Shop() {
     inStock: null
   });
 
-
-
   const fetchProducts = useCallback(
     debounce(async (page = 1) => {
       try {
@@ -131,7 +129,7 @@ export default function Shop() {
         console.error("Error fetching products:", err);
         setError(err.message || 'An unexpected error occurred. Please try again.');
       } finally {
-        setLoading(false); // Set loading false at the end
+        setLoading(false);
       }
     }, 300),
     [filters]
@@ -159,7 +157,7 @@ export default function Shop() {
           } else {
             newFilters.inStock = null;
           }
-        } else { // This handles 'search', 'minPrice', 'maxPrice'
+        } else {
           newFilters[filterType] = value;
         }
         return newFilters;
@@ -376,7 +374,8 @@ export default function Shop() {
                               alt={product.name}
                               fill
                               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                              className="object-contain group-hover:scale-105 transition-transform duration-300 ease-in-out p-2"
+                              
+                              className="object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out p-2"
                               priority={index < 4}
                               onError={(e) => {
                                 e.target.src = "https://placehold.co/600x400/E0E0E0/FFFFFF?text=No+Image";
