@@ -503,8 +503,8 @@ export default function Home() {
                 "https://plus.unsplash.com/premium_photo-1661337223133-a92f4f68d001?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8c3BpY2V8ZW58MHx8MHx8fDA%3D",
                 "https://images.unsplash.com/photo-1592457711340-2412dc07b733?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHNwaWNlfGVufDB8fDB8fHww",
                 "https://plus.unsplash.com/premium_photo-1672076780330-ae81962ee3ce?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fHNwaWNlfGVufDB8fDB8fHww",
-                "https://media.istockphoto.com/id/979264404/photo/ground-black-pepper.webp",
-                "https://media.istockphoto.com/id/518709136/photo/green-cardamom-pods-in-steel-bowl.webp"
+                "https://media.istockphoto.com/id/979264404/photo/ground-black-pepper.webp?a=1&b=1&s=612x612&w=0&k=20&c=VT7S3Vj7CDVI2UwPhqZqWOtsQaoZr97avKhUQxxd57E=",
+                "https://media.istockphoto.com/id/518709136/photo/green-cardamom-pods-in-steel-bowl.webp?a=1&b=1&s=612x612&w=0&k=20&c=bjkqgmdl1KmGfH1pVFkPKSSYQCNtgMjCW1pzL4w6ZMg="
               ].map((src, index) => (
                 <motion.div
                   key={index}
