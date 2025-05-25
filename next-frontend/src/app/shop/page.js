@@ -1,12 +1,12 @@
 "use client";
 
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import Image from 'next/image';
 import { debounce } from 'lodash';
+import Link from 'next/link';
 
 
 const containerVariants = {
@@ -148,7 +148,7 @@ export default function Shop() {
         newFilters.qualityClass = currentValues.includes(normalizedValue)
           ? newFilters.qualityClass.filter(v => v.trim().toLowerCase() !== normalizedValue)
           : [...newFilters.qualityClass, value];
-          
+
         } else if (filterType === 'inStock') {
           if (prev.inStock === null) {
             newFilters.inStock = true;
@@ -374,7 +374,6 @@ export default function Shop() {
                               alt={product.name}
                               fill
                               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                              
                               className="object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out p-2"
                               priority={index < 4}
                               onError={(e) => {
@@ -480,21 +479,18 @@ export default function Shop() {
                           </div>
 
                           {/* View Details Button */}
-                          <button
-                              onClick={(e) => {
-                                  e.stopPropagation(); // Prevent card click from propagating
-                                  handleViewDetails(product.id);
-                              }}
-                              className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold hover:bg-green-800 transition-colors duration-200 transform hover:scale-105 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 flex items-center justify-center gap-2 relative overflow-hidden"
-                          >
+
+                          <Link href={`/products/${product.id}`} passHref>
+                            <button className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold hover:bg-green-800 transition-colors duration-200 transform hover:scale-105 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 flex items-center justify-center gap-2 relative overflow-hidden">
                               <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                               </svg>
                               <span>View Details</span>
                               <span className="absolute right-0 w-8 h-full bg-white/20 transform -skew-x-12 translate-x-12 group-hover:translate-x-[-100px] transition-all duration-500"></span>
-                          </button>
+                            </button>
+                          </Link>
                         </div>
                       </motion.div>
                     );

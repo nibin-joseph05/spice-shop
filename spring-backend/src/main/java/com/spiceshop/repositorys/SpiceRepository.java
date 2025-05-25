@@ -17,5 +17,8 @@ public interface SpiceRepository extends JpaRepository<Spice, Long>, JpaSpecific
     @Query("SELECT LOWER(TRIM(v.qualityClass)) FROM SpiceVariant v GROUP BY LOWER(TRIM(v.qualityClass))")
     List<String> findDistinctQualityClasses();
 
+    @Query("SELECT s FROM Spice s WHERE s.origin = :origin AND s.id != :id AND s.isAvailable = true")
+    List<Spice> findRelatedByOrigin(@Param("id") Long id, @Param("origin") String origin);
+
 
 }

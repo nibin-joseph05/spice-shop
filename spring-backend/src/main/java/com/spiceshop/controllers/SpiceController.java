@@ -217,5 +217,19 @@ public class SpiceController {
         return ResponseEntity.ok(qualityClasses);
     }
 
+    @GetMapping("/spices/{id}/related")
+    public ResponseEntity<List<SpiceDto>> getRelatedSpices(@PathVariable Long id) {
+        try {
+            Spice spice = spiceService.getSpiceById(id);
+            List<Spice> related = spiceService.getRelatedSpices(id, spice.getOrigin());
+            List<SpiceDto> dtos = related.stream()
+                    .map(spiceService::toDto)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            return ResponseEntity.ok(List.of());
+        }
+    }
+
 
 }

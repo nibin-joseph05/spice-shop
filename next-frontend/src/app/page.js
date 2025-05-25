@@ -7,7 +7,7 @@ import Footer from '@/components/home/Footer';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import Image from 'next/image';
 import { debounce } from 'lodash';
-import Link from 'next/link'; // Import Link for navigation
+import Link from 'next/link';
 
 // Animation variants
 const containerVariants = {
@@ -282,7 +282,7 @@ export default function Home() {
                       )}
                     </div>
 
-                    <Link href={`/product/${spice.id}`} passHref>
+                    <Link href={`/products/${spice.id}`} passHref>
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         className="w-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 rounded-lg hover:from-amber-600 hover:to-amber-800 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden"

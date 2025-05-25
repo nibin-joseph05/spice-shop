@@ -221,5 +221,9 @@ public class SpiceService {
                 .collect(Collectors.toList());
     }
 
+    public List<Spice> getRelatedSpices(Long id, String origin) {
+        return spiceRepository.findRelatedByOrigin(id, origin);
+    }
+
 
 }
