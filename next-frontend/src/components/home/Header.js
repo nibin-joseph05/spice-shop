@@ -89,9 +89,13 @@ export default function Header() {
                 Logout
               </button>
             )}
-            <button className="bg-amber-700 text-white px-6 py-2 rounded-full hover:bg-amber-800 transition">
+            {/* Cart Link */}
+            <Link
+              href="/cart" // Assuming '/cart' is your cart page route
+              className="bg-amber-700 text-white px-6 py-2 rounded-full hover:bg-amber-800 transition"
+            >
               Cart (0)
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
