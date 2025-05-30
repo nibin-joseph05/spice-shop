@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/home/Header';
@@ -36,6 +36,17 @@ export default function ProductDetails() {
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
+  const [isImageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -43,7 +54,7 @@ export default function ProductDetails() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check-session`, {
           credentials: 'include'
         });
-        if (response.ok) {
+        if (response.ok && isMountedRef.current) {
           setIsLoggedIn(true);
         }
       } catch (err) {
@@ -56,6 +67,10 @@ export default function ProductDetails() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        setLoading(true);
+        setImageLoading(true);
+        setImageError(false);
+
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices/${id}`
         );
@@ -63,13 +78,17 @@ export default function ProductDetails() {
         if (!response.ok) throw new Error('Product not found');
 
         const data = await response.json();
-        setProduct(data);
-        setMainImage(data.imageUrls[0] || '');
-        setSelectedVariant(data.variants[0]);
-        setLoading(false);
+        if (isMountedRef.current) {
+          setProduct(data);
+          setMainImage(data.imageUrls[0] || '');
+          setSelectedVariant(data.variants[0]);
+          setLoading(false);
+        }
       } catch (err) {
-        setError(err.message);
-        setLoading(false);
+        if (isMountedRef.current) {
+          setError(err.message);
+          setLoading(false);
+        }
       }
     };
 
@@ -85,15 +104,33 @@ export default function ProductDetails() {
           return res.json();
         })
         .then(data => {
-          setRelatedProducts(data);
-          setRelatedLoading(false);
+          if (isMountedRef.current) {
+            setRelatedProducts(data);
+            setRelatedLoading(false);
+          }
         })
         .catch(err => {
           console.error(err);
-          setRelatedLoading(false);
+          if (isMountedRef.current) {
+            setRelatedLoading(false);
+          }
         });
     }
   }, [product, id]);
+
+  const handleImageLoad = () => {
+    if (isMountedRef.current) {
+      setImageLoading(false);
+      setImageError(false);
+    }
+  };
+
+  const handleImageError = () => {
+    if (isMountedRef.current) {
+      setImageLoading(false);
+      setImageError(true);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!isLoggedIn) {
@@ -107,61 +144,65 @@ export default function ProductDetails() {
     setSelectedPack(pack);
   };
 
+  const handleThumbnailClick = (img) => {
+    setMainImage(img);
+    setImageLoading(true);
+    setImageError(false);
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
 
-
-
   if (loading) {
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <Header />
-          <div className="container mx-auto px-6 py-12">
-            <div className="animate-pulse bg-white p-8 rounded-xl shadow-lg">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="space-y-4">
-                  <div className="h-96 bg-gray-200 rounded-xl" />
-                  <div className="flex gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="h-20 w-20 bg-gray-200 rounded-lg" />
-                    ))}
-                  </div>
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-6 py-12">
+          <div className="animate-pulse bg-white p-8 rounded-xl shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-4">
+                <div className="h-96 bg-gray-200 rounded-xl" />
+                <div className="flex gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-20 w-20 bg-gray-200 rounded-lg" />
+                  ))}
                 </div>
-                <div className="space-y-6">
-                  <div className="h-8 bg-gray-200 w-3/4 rounded" />
-                  <div className="h-4 bg-gray-200 w-1/2 rounded" />
-                  <div className="h-12 bg-gray-200 w-full rounded" />
-                  <div className="h-32 bg-gray-200 rounded" />
-                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-8 bg-gray-200 w-3/4 rounded" />
+                <div className="h-4 bg-gray-200 w-1/2 rounded" />
+                <div className="h-12 bg-gray-200 w-full rounded" />
+                <div className="h-32 bg-gray-200 rounded" />
               </div>
             </div>
           </div>
-          <Footer />
         </div>
-      );
-    }
+        <Footer />
+      </div>
+    );
+  }
 
-    if (error) {
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <Header />
-          <div className="container mx-auto px-6 py-24 text-center">
-            <div className="max-w-md mx-auto bg-red-50 p-8 rounded-xl shadow-lg">
-              <h2 className="text-2xl font-bold text-red-800 mb-4">Product Not Found</h2>
-              <p className="text-red-700 mb-6">{error}</p>
-              <a
-                href="/shop"
-                className="inline-block px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-              >
-                Back to Shop
-              </a>
-            </div>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-6 py-24 text-center">
+          <div className="max-w-md mx-auto bg-red-50 p-8 rounded-xl shadow-lg">
+            <h2 className="text-2xl font-bold text-red-800 mb-4">Product Not Found</h2>
+            <p className="text-red-700 mb-6">{error}</p>
+            <a
+              href="/shop"
+              className="inline-block px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Back to Shop
+            </a>
           </div>
-          <Footer />
         </div>
-      );
-    }
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -182,21 +223,48 @@ export default function ProductDetails() {
                 className="relative h-96 w-full bg-gray-100 rounded-xl overflow-hidden shadow-lg"
                 whileHover={{ scale: 1.02 }}
               >
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                />
+                {isImageLoading && !imageError && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
+                  </div>
+                )}
+
+                {imageError ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 p-4">
+                    <span className="text-red-600 text-lg font-medium mb-2">
+                      Failed to load image
+                    </span>
+                    <button
+                      onClick={() => {
+                        setImageLoading(true);
+                        setImageError(false);
+                      }}
+                      className="text-amber-600 hover:text-amber-700 font-medium"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <Image
+                    src={mainImage}
+                    alt={product.name}
+                    fill
+                    className={`object-cover transition-opacity duration-300 ${
+                      isImageLoading ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                  />
+                )}
               </motion.div>
 
               <div className="flex flex-wrap gap-3">
                 {product.imageUrls.map((img, index) => (
                   <motion.button
                     key={index}
-                    onClick={() => setMainImage(img)}
+                    onClick={() => handleThumbnailClick(img)}
                     whileHover={{ scale: 1.05 }}
                     className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                       mainImage === img
@@ -210,6 +278,9 @@ export default function ProductDetails() {
                       width={64}
                       height={64}
                       className="object-cover w-full h-full"
+                      onError={(e) => {
+                        e.target.src = '/placeholder-image.jpg';
+                      }}
                     />
                   </motion.button>
                 ))}
