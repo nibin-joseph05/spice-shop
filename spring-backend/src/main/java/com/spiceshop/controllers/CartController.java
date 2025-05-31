@@ -5,7 +5,7 @@ import com.spiceshop.services.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.servlet.http.HttpSession;
 import java.security.Principal;
 
 @RestController
@@ -14,10 +14,12 @@ import java.security.Principal;
 public class CartController {
 
     private final CartService cartService;
+    private final HttpSession httpSession;
 
     @Autowired
-    public CartController(CartService cartService) {
+    public CartController(CartService cartService, HttpSession httpSession) {
         this.cartService = cartService;
+        this.httpSession = httpSession;
     }
 
     @GetMapping
@@ -59,12 +61,13 @@ public class CartController {
     }
 
     private Long getUserIdFromPrincipal(Principal principal) {
-        // Implement logic to get user ID from authentication principal
-        // For example, if using JWT:
-        // return ((UserDetails) principal).getId();
-        return 1L; // Placeholder - replace with actual user ID retrieval
-    }
+        Object userIdObj = httpSession.getAttribute("userId");
+        if (userIdObj instanceof Long) {
+            return (Long) userIdObj;
+        }
 
+        throw new SecurityException("User not authenticated or userId not found in session.");
+    }
 
     @GetMapping("/count")
     public ResponseEntity<Integer> getCartItemCount(Principal principal) {

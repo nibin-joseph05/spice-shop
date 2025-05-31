@@ -115,7 +115,7 @@ public class CartService {
         recalculateCartTotals(cart);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartDTO getCartDetails(Long userId) {
         Cart cart = getOrCreateCart(userId);
         return convertToDTO(cart);
