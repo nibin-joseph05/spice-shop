@@ -6,6 +6,7 @@ import Image from 'next/image';
 
 export default function Header() {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   useEffect(() => {
@@ -15,6 +16,15 @@ export default function Header() {
           credentials: 'include',
         });
         setUserLoggedIn(response.ok);
+
+        // Fetch cart count
+        const cartResponse = await fetch(`${backendUrl}/api/cart/count`, {
+          credentials: 'include',
+        });
+        if (cartResponse.ok) {
+          const count = await cartResponse.json();
+          setCartCount(count);
+        }
       } catch (error) {
         console.error('Session check failed:', error);
         setUserLoggedIn(false);
@@ -91,10 +101,15 @@ export default function Header() {
             )}
             {/* Cart Link */}
             <Link
-              href="/cart" // Assuming '/cart' is your cart page route
-              className="bg-amber-700 text-white px-6 py-2 rounded-full hover:bg-amber-800 transition"
+              href="/cart"
+              className="relative bg-amber-700 text-white px-6 py-2 rounded-full hover:bg-amber-800 transition"
             >
-              Cart (0)
+              Cart
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

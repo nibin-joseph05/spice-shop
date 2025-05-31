@@ -1,13 +1,16 @@
 "use client";
 
+
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import RelatedProducts from '@/components/spice-detail/RelatedProducts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StarIcon, ShoppingCartIcon } from '@heroicons/react/24/solid';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -25,6 +28,7 @@ const scaleUp = {
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const router = useRouter();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,6 +43,7 @@ export default function ProductDetails() {
   const [isImageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const isMountedRef = useRef(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -132,13 +137,54 @@ export default function ProductDetails() {
     }
   };
 
-  const handleAddToCart = () => {
-    if (!isLoggedIn) {
-      setShowLoginPrompt(true);
-      return;
-    }
-    // Add to cart logic here
-  };
+  const handleAddToCart = async () => {
+      if (!isLoggedIn) {
+        setShowLoginPrompt(true);
+        return;
+      }
+
+      if (!selectedPack) {
+        toast.warn('Please select a pack size');
+        return;
+      }
+
+      setAddingToCart(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/cart/items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            spicePackId: selectedPack.id,
+            quantity: 1
+          }),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to add to cart');
+        }
+
+        toast.success('Item added to cart!', {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+
+
+        router.push('/cart');
+      } catch (error) {
+        toast.error(error.message || 'Failed to add item to cart');
+        console.error('Add to cart error:', error);
+      } finally {
+        setAddingToCart(false);
+      }
+    };
 
   const handlePackSelect = (pack) => {
     setSelectedPack(pack);
@@ -379,28 +425,28 @@ export default function ProductDetails() {
 
               {/* Add to Cart Section */}
               <div className="pt-6 border-t border-gray-200">
-                <motion.div
-                  className="flex items-center gap-4"
-                  variants={scaleUp}
-                >
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={!selectedPack}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-xl text-lg font-bold transition-all ${
-                      selectedPack
-                        ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    }`}
+                  <motion.div
+                    className="flex items-center gap-4"
+                    variants={scaleUp}
                   >
-                    <ShoppingCartIcon className="h-6 w-6" />
-                    Add to Cart
-                  </button>
-                  {selectedPack && (
-                    <div className="text-2xl font-bold text-gray-900">
-                      ₹{(selectedPack.price).toFixed(2)}
-                    </div>
-                  )}
-                </motion.div>
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={!selectedPack || addingToCart}
+                      className={`flex items-center gap-3 px-8 py-4 rounded-xl text-lg font-bold transition-all ${
+                        selectedPack && !addingToCart
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg hover:shadow-xl'
+                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <ShoppingCartIcon className="h-6 w-6" />
+                      {addingToCart ? 'Adding...' : 'Add to Cart'}
+                    </button>
+                    {selectedPack && (
+                      <div className="text-2xl font-bold text-gray-900">
+                        ₹{(selectedPack.price).toFixed(2)}
+                      </div>
+                    )}
+                  </motion.div>
               </div>
             </div>
           </div>
