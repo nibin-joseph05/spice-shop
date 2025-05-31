@@ -48,6 +48,7 @@ export default function CartPage() {
       if (!response.ok) {
         if (response.status === 404) {
           setIsCartEmpty(true);
+          setCart({ items: [] });
           fetchFeaturedSpices();
           return;
         }
@@ -56,8 +57,11 @@ export default function CartPage() {
 
       const cartData = await response.json();
       setCart(cartData);
-      setIsCartEmpty(cartData.items.length === 0);
-      if (cartData.items.length === 0) fetchFeaturedSpices();
+      const isEmpty = cartData.items.length === 0;
+      setIsCartEmpty(isEmpty);
+      if (isEmpty) {
+        fetchFeaturedSpices();
+      }
     } catch (err) {
       setError(err.message);
       console.error('Cart fetch error:', err);
@@ -76,6 +80,7 @@ export default function CartPage() {
       if (!response.ok) throw new Error('Failed to fetch featured spices');
 
       const data = await response.json();
+
       setFeaturedSpices(data.products || []);
     } catch (err) {
       console.error('Featured spices error:', err);
@@ -122,6 +127,9 @@ export default function CartPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update quantity');
       }
+      // Re-fetch cart after successful update to ensure consistency,
+      // especially if backend re-calculates totals or applies different logic
+      await fetchCart();
     } catch (error) {
       toast.error(error.message || 'Failed to update quantity');
       console.error('Update quantity error:', error);
@@ -139,7 +147,11 @@ export default function CartPage() {
     setCart(prev => {
       const newItems = prev.items.filter(item => item.id !== itemId);
       const newCart = { ...prev, items: newItems };
-      setIsCartEmpty(newItems.length === 0);
+      const isEmpty = newItems.length === 0;
+      setIsCartEmpty(isEmpty);
+      if (isEmpty) {
+        fetchFeaturedSpices(); // Fetch featured spices immediately if cart becomes empty
+      }
       return newCart;
     });
 
@@ -158,6 +170,8 @@ export default function CartPage() {
       }
 
       toast.success('Item removed from cart');
+      // Re-fetch cart after successful removal to ensure consistency
+      await fetchCart();
     } catch (error) {
       toast.error(error.message || 'Failed to remove item');
       console.error('Remove item error:', error);
@@ -284,56 +298,56 @@ export default function CartPage() {
               </motion.div>
 
               {/* Featured Spices */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Featured Spices</h2>
-                  <a href="/shop" className="text-sm text-amber-600 hover:text-amber-700 font-medium">
-                    View All Spices
-                  </a>
-                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">Featured Spices</h2>
+                    <a href="/shop" className="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                      View All Spices
+                    </a>
+                  </div>
 
-                {featuredLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="bg-gray-200 aspect-square rounded-lg"></div>
-                        <div className="h-5 bg-gray-200 rounded mt-3 w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded mt-2 w-1/2"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {featuredSpices.map((spice) => (
-                      <a
-                        key={spice.id}
-                        href={`/spices/${spice.id}`}
-                        className="group block transition-transform hover:scale-[1.02]"
-                      >
-                        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                          {spice.images?.[0]?.imageUrl ? (
-                            <Image
-                              src={spice.images[0].imageUrl}
-                              alt={spice.name}
-                              fill
-                              className="object-cover group-hover:opacity-90 transition-opacity"
-                              unoptimized // Fixes image loading issue
-                            />
-                          ) : (
-                            <div className="bg-gray-200 w-full h-full flex items-center justify-center">
-                              <span className="text-gray-500">No image</span>
-                            </div>
-                          )}
+                  {featuredLoading ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="bg-gray-200 aspect-square rounded-lg"></div>
+                          <div className="h-5 bg-gray-200 rounded mt-3 w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded mt-2 w-1/2"></div>
                         </div>
-                        <h3 className="font-medium text-gray-900 mt-3 truncate">{spice.name}</h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          From ₹{spice.variants?.[0]?.packs?.[0]?.price?.toFixed(2) || '0.00'}
-                        </p>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      {featuredSpices.map((spice) => (
+                        <a
+                          key={spice.id}
+                          href={`/products/${spice.id}`}
+                          className="group block transition-transform hover:scale-[1.02]"
+                        >
+                          <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                            {spice.imageUrls?.[0] ? (
+                              <Image
+                                src={spice.imageUrls[0]}
+                                alt={spice.name}
+                                fill
+                                className="object-cover group-hover:opacity-90 transition-opacity"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="bg-gray-200 w-full h-full flex items-center justify-center">
+                                <span className="text-gray-500 text-xs text-center">No image available</span>
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-medium text-gray-900 mt-3 truncate">{spice.name}</h3>
+                          <p className="text-gray-600 text-sm mt-1">
+                            From ₹{spice.variants?.[0]?.packs?.[0]?.price?.toFixed(2) || '0.00'}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -379,11 +393,12 @@ export default function CartPage() {
                                     alt={item.spiceName || 'Spice'}
                                     fill
                                     className="object-cover"
-                                    unoptimized // Fixes image loading issue
+                                    unoptimized
+                                    priority
                                   />
                                 ) : (
                                   <div className="bg-gray-200 w-full h-full flex items-center justify-center">
-                                    <span className="text-gray-500">No image</span>
+                                    <span className="text-gray-500 text-xs text-center">No image</span>
                                   </div>
                                 )}
                               </div>
