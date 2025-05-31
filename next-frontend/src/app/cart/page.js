@@ -6,8 +6,6 @@ import Image from 'next/image';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import { PlusIcon, MinusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/solid';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const cartItemAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -37,6 +35,7 @@ export default function CartPage() {
   const [isCartEmpty, setIsCartEmpty] = useState(false);
   const [featuredSpices, setFeaturedSpices] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(false);
+  const [quantityMessage, setQuantityMessage] = useState('');
 
   const fetchCart = async () => {
     setLoading(true);
@@ -94,7 +93,20 @@ export default function CartPage() {
   }, []);
 
   const updateQuantity = async (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
+    if (newQuantity < 1) {
+        setQuantityMessage("Quantity cannot be less than 1.");
+        setTimeout(() => setQuantityMessage(''), 3000);
+        return;
+    }
+
+    // Check against available stock (assuming item has a stockQuantity)
+    const currentItem = cart.items.find(item => item.id === itemId);
+    if (currentItem && newQuantity > currentItem.maxQuantityAvailable) {
+        setQuantityMessage(`You can't buy more than ${currentItem.maxQuantityAvailable} of this product.`);
+        setTimeout(() => setQuantityMessage(''), 3000);
+        return;
+    }
+
 
     setIsUpdating(true);
     // Optimistic UI update
@@ -127,13 +139,14 @@ export default function CartPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update quantity');
       }
-      // Re-fetch cart after successful update to ensure consistency,
-      // especially if backend re-calculates totals or applies different logic
+
       await fetchCart();
+      setQuantityMessage(''); // Clear message on successful update
     } catch (error) {
-      toast.error(error.message || 'Failed to update quantity');
-      console.error('Update quantity error:', error);
-      // Revert on error
+      setQuantityMessage(error.message || 'Failed to update quantity.'); // Display error message
+      setTimeout(() => setQuantityMessage(''), 3000); // Clear message after 3 seconds
+//      console.error('Update quantity error:', error);
+//      // Revert on error
       setCart(previousCart);
     } finally {
       setIsUpdating(false);
@@ -150,7 +163,7 @@ export default function CartPage() {
       const isEmpty = newItems.length === 0;
       setIsCartEmpty(isEmpty);
       if (isEmpty) {
-        fetchFeaturedSpices(); // Fetch featured spices immediately if cart becomes empty
+        fetchFeaturedSpices();
       }
       return newCart;
     });
@@ -169,11 +182,10 @@ export default function CartPage() {
         throw new Error(errorData.message || 'Failed to remove item');
       }
 
-      toast.success('Item removed from cart');
-      // Re-fetch cart after successful removal to ensure consistency
       await fetchCart();
     } catch (error) {
-      toast.error(error.message || 'Failed to remove item');
+      setQuantityMessage(error.message || 'Failed to remove item.'); // Display error message
+      setTimeout(() => setQuantityMessage(''), 3000);
       console.error('Remove item error:', error);
       setCart(previousCart);
     } finally {
@@ -206,12 +218,14 @@ export default function CartPage() {
 
   const proceedToCheckout = () => {
     if (!cart || cart.items.length === 0) {
-      toast.warn('Your cart is empty');
+      setQuantityMessage('Your cart is empty.'); // Display message
+      setTimeout(() => setQuantityMessage(''), 3000);
       return;
     }
     // Redirect to checkout page
     // router.push('/checkout');
-    toast.info('Proceeding to checkout...');
+    setQuantityMessage('Proceeding to checkout...'); // Display message
+    setTimeout(() => setQuantityMessage(''), 3000);
   };
 
   if (loading) {
@@ -273,6 +287,19 @@ export default function CartPage() {
       <main className="container mx-auto px-4 lg:px-8 py-12">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Your Shopping Cart</h1>
+
+          {/* NEW: Display quantity message here */}
+          {quantityMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6 p-4 bg-yellow-100 border border-yellow-200 text-yellow-800 rounded-lg shadow-sm text-center font-medium"
+            >
+              {quantityMessage}
+            </motion.div>
+          )}
 
           {!cart || isCartEmpty ? (
             <div className="space-y-12">

@@ -13,7 +13,7 @@ import com.spiceshop.repositorys.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.spiceshop.exceptions.InsufficientStockException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -89,12 +89,26 @@ public class CartService {
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Cart item not found"));
 
-        // Verify item belongs to user's cart
+
         if (!item.getCart().getId().equals(cart.getId())) {
             throw new SecurityException("Cart item does not belong to user");
         }
 
-        item.setQuantity(request.getQuantity());
+        SpicePack spicePack = item.getSpicePack();
+        int newDesiredQuantity = request.getQuantity();
+
+
+        if (newDesiredQuantity < 1) {
+            removeItemFromCart(userId, itemId);
+            return;
+        }
+        if (newDesiredQuantity > spicePack.getStockQuantity()) {
+            throw new InsufficientStockException("Not enough stock available for " + spicePack.getVariant().getSpice().getName() +
+                    " (" + spicePack.getPackWeightInGrams() + "g). Max available: " + spicePack.getStockQuantity());
+        }
+
+        // Proceed with updating if stock is sufficient
+        item.setQuantity(newDesiredQuantity);
         cartItemRepository.save(item);
         recalculateCartTotals(cart);
     }
