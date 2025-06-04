@@ -48,13 +48,14 @@ export default function CartPage() {
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
-          setIsCartEmpty(true);
-          setCart({ items: [] });
-          fetchFeaturedSpices();
-          return;
-        }
-        throw new Error('Failed to fetch cart');
+          // Handle both 404 (cart not found) and 401/403 (unauthorized)
+          if (response.status === 404 || response.status === 401 || response.status === 403) {
+            setIsCartEmpty(true);
+            setCart({ items: [] });
+            fetchFeaturedSpices();
+            return;
+          }
+          throw new Error('Failed to fetch cart');
       }
 
       const cartData = await response.json();

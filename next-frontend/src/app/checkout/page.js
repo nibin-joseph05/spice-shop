@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
-import { CreditCardIcon, TruckIcon } from '@heroicons/react/24/outline'; // For payment icons
-import { ShoppingBagIcon } from '@heroicons/react/24/solid'; // For empty cart icon
-import { useRouter } from 'next/navigation'; // Import useRouter for navigation
+import { CreditCardIcon, TruckIcon, MapPinIcon, PlusCircleIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ShoppingBagIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
 
 // Dummy data for states - replace with actual data or fetch from an API if needed
 const indianStates = [
@@ -25,24 +25,35 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [formMessage, setFormMessage] = useState(''); // For form-related messages
+  const [formMessage, setFormMessage] = useState('');
 
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
     lastName: '',
-    address: '',
-    apartment: '',
+    addressLine1: '',
+    addressLine2: '',
     city: '',
     state: '',
     pinCode: '',
     phone: '',
-    useSameAddressForBilling: true,
+    note: '',
+    billingSameAsShipping: true,
   });
-  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false); // State to track login status
 
-  const router = useRouter(); // Initialize the router
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null); // null for new address, ID for existing
+  const [isEditingAddress, setIsEditingAddress] = useState(false); // New state for editing existing address
+
+  const router = useRouter();
+
+  // Helper to display transient messages
+  const showMessage = (msg, isSuccess = false) => {
+    setFormMessage(msg);
+    // You can add a class here for success/error styling if needed
+    setTimeout(() => setFormMessage(''), 5000);
+  };
 
   const fetchCart = async () => {
     setLoading(true);
@@ -53,7 +64,7 @@ export default function CheckoutPage() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          setCart({ items: [] }); // Cart is empty
+          setCart({ items: [] });
           throw new Error('Your cart is empty. Please add items before checking out.');
         }
         throw new Error('Failed to fetch cart. Please try again.');
@@ -65,7 +76,7 @@ export default function CheckoutPage() {
         throw new Error('Your cart is empty. Please add items before checking out.');
       }
       setCart(cartData);
-      recalculateTotals(cartData); // Recalculate totals on fetch
+      recalculateTotals(cartData);
     } catch (err) {
       setError(err.message);
       console.error('Cart fetch error:', err);
@@ -73,6 +84,52 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  const fetchUserAddresses = useCallback(async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses`, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          setSavedAddresses(data.addresses);
+          // Set initial selection: If no address was previously selected, or selected one is gone,
+          // default to the first saved address, or keep 'new' selected.
+          if (!selectedAddressId || !data.addresses.some(addr => addr.id === selectedAddressId)) {
+            setSelectedAddressId(data.addresses[0].id); // Select the first address by default
+            setFormDataFromAddress(data.addresses[0]);
+            setIsEditingAddress(false); // Not editing when selecting
+          } else {
+            // Re-populate if the selected address is still there (e.g., after an edit)
+            const currentSelected = data.addresses.find(addr => addr.id === selectedAddressId);
+            if (currentSelected) {
+                setFormDataFromAddress(currentSelected);
+            }
+            setIsEditingAddress(false); // Not editing when selecting
+          }
+        } else {
+          setSavedAddresses([]);
+          setSelectedAddressId(null); // No saved addresses, default to new
+          resetFormDataForNewAddress();
+          setIsEditingAddress(false);
+        }
+      } else {
+        console.error('Failed to fetch user addresses:', await response.json());
+        setSavedAddresses([]);
+        setSelectedAddressId(null);
+        resetFormDataForNewAddress();
+        setIsEditingAddress(false);
+      }
+    } catch (err) {
+      console.error('Error fetching user addresses:', err);
+      setSavedAddresses([]);
+      setSelectedAddressId(null);
+      resetFormDataForNewAddress();
+      setIsEditingAddress(false);
+    }
+  }, [selectedAddressId]); // Re-run if selectedAddressId changes (e.g. after adding a new one)
 
   const checkUserSession = async () => {
     try {
@@ -90,31 +147,71 @@ export default function CheckoutPage() {
           firstName: data.firstName || '',
           lastName: data.lastName || '',
         }));
+        await fetchUserAddresses(); // Fetch addresses if logged in
       } else {
         setIsUserLoggedIn(false);
+        setSavedAddresses([]);
+        setSelectedAddressId(null);
+        resetFormDataForNewAddress(); // Clear form for guest checkout
+        setIsEditingAddress(false);
       }
     } catch (err) {
       console.error('Session check error:', err);
       setIsUserLoggedIn(false);
+      setSavedAddresses([]);
+      setSelectedAddressId(null);
+      resetFormDataForNewAddress();
+      setIsEditingAddress(false);
     }
+  };
+
+  const resetFormDataForNewAddress = () => {
+    setFormData(prev => ({
+      ...prev,
+      // Keep email, first name, last name if user is logged in, otherwise clear
+      email: isUserLoggedIn ? prev.email : '',
+      firstName: isUserLoggedIn ? prev.firstName : '',
+      lastName: isUserLoggedIn ? prev.lastName : '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pinCode: '',
+      phone: '',
+      note: '',
+      billingSameAsShipping: true,
+    }));
+  };
+
+  const setFormDataFromAddress = (address) => {
+    setFormData(prev => ({
+      ...prev,
+      firstName: address.firstName,
+      lastName: address.lastName,
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2 || '',
+      city: address.city,
+      state: address.state,
+      pinCode: address.pinCode,
+      phone: address.phone || '',
+      note: address.note || '',
+      billingSameAsShipping: address.billingSameAsShipping,
+    }));
   };
 
   useEffect(() => {
     fetchCart();
-    checkUserSession(); // Check user session on component mount
-  }, []);
+    checkUserSession();
+  }, []); // Empty dependency array, runs once on mount
 
-  // Function to recalculate totals based on the provided cart data
+  // Recalculate totals
   const recalculateTotals = (currentCart) => {
     if (!currentCart || !currentCart.items) return;
-
     const subtotal = currentCart.items.reduce(
       (sum, item) => sum + (item.price * item.quantity), 0
     );
-
-    const shippingCost = subtotal >= 500 ? 0 : 50; // Free shipping logic for orders over ₹500
+    const shippingCost = subtotal >= 500 ? 0 : 50;
     const total = subtotal + shippingCost;
-
     setCart(prev => ({
       ...prev,
       subtotal,
@@ -131,67 +228,221 @@ export default function CheckoutPage() {
     }));
   };
 
+  const handleAddressSelection = (e) => {
+    const id = e.target.value === 'new' ? null : Number(e.target.value);
+    setSelectedAddressId(id);
+    setIsEditingAddress(false); // Always stop editing when selecting new or existing
+
+    if (id === null) {
+      resetFormDataForNewAddress();
+    } else {
+      const address = savedAddresses.find(addr => addr.id === id);
+      if (address) {
+        setFormDataFromAddress(address);
+      }
+    }
+  };
+
+  const validateAddressForm = () => {
+    if (!formData.email || !formData.firstName || !formData.lastName ||
+        !formData.addressLine1 || !formData.city || !formData.state || !formData.pinCode) {
+      showMessage('Please fill in all required shipping details.', false);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSaveAddress = async () => {
+    if (!validateAddressForm()) {
+      return;
+    }
+
+    if (!isUserLoggedIn) {
+        showMessage('You must be logged in to save an address.', false);
+        return;
+    }
+
+    setFormMessage('Saving address...');
+    try {
+        const payload = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: formData.addressLine1,
+            addressLine2: formData.addressLine2,
+            city: formData.city,
+            state: formData.state,
+            pinCode: formData.pinCode,
+            phone: formData.phone,
+            note: formData.note,
+            billingSameAsShipping: formData.billingSameAsShipping,
+        };
+
+        let response;
+        let data;
+
+        if (isEditingAddress && selectedAddressId) {
+            // Update existing address
+            response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses/${selectedAddressId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'include',
+            });
+        } else {
+            // Add new address
+            response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'include',
+            });
+        }
+
+        data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to save address.');
+        }
+
+        showMessage(`Address ${isEditingAddress ? 'updated' : 'saved'} successfully!`, true);
+        await fetchUserAddresses(); // Refresh addresses after save/update
+        // Automatically select the newly saved address if it was a new one
+        if (!isEditingAddress && data.address && data.address.id) {
+            setSelectedAddressId(data.address.id);
+        }
+        setIsEditingAddress(false); // Exit edit mode after saving
+    } catch (err) {
+        showMessage(err.message, false);
+        console.error('Error saving address:', err);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    if (!window.confirm('Are you sure you want to delete this address?')) {
+        return;
+    }
+    setFormMessage('Deleting address...');
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses/${addressId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to delete address.');
+        }
+
+        showMessage('Address deleted successfully!', true);
+        await fetchUserAddresses(); // Refresh the list
+        setSelectedAddressId(null); // Deselect if the deleted address was selected
+        resetFormDataForNewAddress(); // Clear form and show new address input
+    } catch (err) {
+        showMessage(err.message, false);
+        console.error('Error deleting address:', err);
+    }
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormMessage('');
-    // Basic form validation
-    if (!formData.email || !formData.firstName || !formData.lastName ||
-        !formData.address || !formData.city || !formData.state || !formData.pinCode) {
-      setFormMessage('Please fill in all required shipping details.');
-      setTimeout(() => setFormMessage(''), 5000);
-      return;
+
+    // Ensure a valid address is selected or entered
+    if (!selectedAddressId && (!isEditingAddress && !validateAddressForm())) {
+        return; // validateAddressForm will show message
     }
 
     if (!cart || cart.items.length === 0) {
-      setFormMessage('Your cart is empty. Cannot place an order.');
-      setTimeout(() => setFormMessage(''), 5000);
+      showMessage('Your cart is empty. Cannot place an order.', false);
       return;
     }
 
-    console.log('Checkout Form Data:', formData);
-    console.log('Cart to be processed:', cart);
+    let shippingAddressPayload;
 
-    setFormMessage('Proceeding with order...');
-    // Simulate API call
+    if (isEditingAddress) {
+        // If editing, use current formData, but validate and save first
+        showMessage('Please save the edited address before placing the order.', false);
+        return;
+    } else if (selectedAddressId) {
+        // If an existing address is selected, send its ID
+        shippingAddressPayload = { id: selectedAddressId };
+    } else {
+        // If "Add new address" is selected, and form is valid, send the full form data
+        if (!validateAddressForm()) return; // Re-validate new address form
+        shippingAddressPayload = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: formData.addressLine1,
+            addressLine2: formData.addressLine2,
+            city: formData.city,
+            state: formData.state,
+            pinCode: formData.pinCode,
+            phone: formData.phone,
+            note: formData.note,
+            billingSameAsShipping: formData.billingSameAsShipping,
+        };
+    }
+
+    const orderPayload = {
+      cartItems: cart.items.map(item => ({
+        spiceId: item.spiceId,
+        quantity: item.quantity,
+        packWeightInGrams: item.packWeightInGrams,
+        price: item.price
+      })),
+      shippingAddress: shippingAddressPayload, // This will be either {id: X} or a full address object
+      paymentMethod: document.querySelector('input[name="paymentMethod"]:checked')?.value || 'razorpay',
+      orderNotes: formData.note,
+      totalAmount: cart.total,
+    };
+
+    console.log('Order Payload:', orderPayload);
+    showMessage('Proceeding with order...');
+
     try {
-      // In a real application, you would send this data to your backend
-      // for order creation and payment processing.
-      // This is where Razorpay integration would typically be initiated client-side
-      // after the order is created on your backend.
+      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders/place`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+        credentials: 'include'
+      });
 
-      // Example: Call a backend endpoint to create an order
-      // const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     cartItems: cart.items,
-      //     shippingAddress: formData,
-      //     paymentMethod: 'razorpay', // or 'cod' based on user selection
-      //     totalAmount: cart.total,
-      //   }),
-      //   credentials: 'include'
-      // });
+      const responseData = await orderResponse.json();
 
-      // if (!orderResponse.ok) {
-      //   const errorData = await orderResponse.json();
-      //   throw new Error(errorData.message || 'Failed to place order.');
-      // }
+      if (!orderResponse.ok || !responseData.success) {
+        throw new Error(responseData.message || 'Failed to place order. Please try again.');
+      }
 
-      // const orderData = await orderResponse.json();
-      setFormMessage('Order placed successfully! Redirecting...');
-      // After successful order creation (backend), you would typically initiate Razorpay payment
-      // For demo, we just show an alert and simulate redirect
-      setTimeout(() => {
-        alert('Order placed successfully! (This is a demo, no actual order was placed)');
-        // router.push(`/order-confirmation/${orderData.orderId}`); // Redirect to confirmation page
-      }, 2000);
+      showMessage('Order placed successfully! Redirecting...', true);
+      router.push(`/order-confirmation/${responseData.orderId}`);
 
     } catch (err) {
-      setFormMessage(err.message || 'An error occurred while placing your order.');
-      setTimeout(() => setFormMessage(''), 5000);
+      showMessage(err.message, false);
+      console.error('Order placement error:', err);
     }
+  };
+
+
+  // Determine if "Place Order" button should be disabled
+  const isPlaceOrderDisabled = () => {
+    // If no address is selected AND we're not explicitly adding/editing a new one
+    if (!selectedAddressId && !isEditingAddress) return true;
+
+    // If adding/editing a new address, ensure form is valid
+    if ((selectedAddressId === null || isEditingAddress) && !validateAddressForm()) {
+        return true;
+    }
+
+    // If in edit mode, user should save changes before placing order
+    if (isEditingAddress) {
+        return true;
+    }
+
+    return false;
   };
 
 
@@ -312,7 +563,6 @@ export default function CheckoutPage() {
                     onChange={handleInputChange}
                     placeholder="your_email@example.com"
                     required
-                    // Disable if user is logged in
                     disabled={isUserLoggedIn}
                     className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm ${isUserLoggedIn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   />
@@ -333,153 +583,255 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Shipping Address */}
+              {/* Shipping Address Selection/Input */}
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Shipping Address</h2>
                 <p className="text-gray-600 mb-4 text-sm">Enter the address where you want your order delivered.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                      First name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Last name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                <div className="mt-4">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                    Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Street address, P.O. Box"
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-2">
-                    Apartment, suite, etc. (optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="apartment"
-                    name="apartment"
-                    value={formData.apartment}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                  />
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                      City <span className="text-red-500">*</span>
+                {isUserLoggedIn && savedAddresses.length > 0 && (
+                  <div className="mb-6 border p-4 rounded-lg bg-gray-50">
+                    <label htmlFor="addressSelection" className="block text-sm font-medium text-gray-700 mb-2">
+                      Choose a saved address or add a new one:
                     </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    />
+                    <div className="relative flex items-center gap-2">
+                        <MapPinIcon className="h-5 w-5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <select
+                        id="addressSelection"
+                        name="addressSelection"
+                        value={selectedAddressId === null ? 'new' : selectedAddressId}
+                        onChange={handleAddressSelection}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 pl-10 pr-10 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm bg-white appearance-none"
+                        >
+                        {savedAddresses.map((address) => (
+                            <option key={address.id} value={address.id}>
+                            {`${address.addressLine1}, ${address.city}, ${address.state} - ${address.pinCode}`}
+                            </option>
+                        ))}
+                        <option value="new">Add a new address</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                    {selectedAddressId && !isEditingAddress && (
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsEditingAddress(true)}
+                                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                            >
+                                <PencilSquareIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+                                Edit Selected
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDeleteAddress(selectedAddressId)}
+                                className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                                <TrashIcon className="-ml-0.5 mr-2 h-4 w-4" aria-hidden="true" />
+                                Delete
+                            </button>
+                        </div>
+                    )}
                   </div>
-                  <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
-                      State <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm bg-white"
-                    >
-                      <option value="">Select State</option>
-                      {indianStates.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                )}
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="pinCode" className="block text-sm font-medium text-gray-700 mb-2">
-                      PIN Code <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="pinCode"
-                      name="pinCode"
-                      value={formData.pinCode}
-                      onChange={handleInputChange}
-                      required
-                      pattern="[0-9]{6}"
-                      title="Please enter a 6-digit PIN code"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone (optional)
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
+                {(selectedAddressId === null || isEditingAddress) && ( // Show form if new or editing existing
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-4 overflow-hidden" // overflow-hidden to prevent jump on animation
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                          First name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          required
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                          Last name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          required
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
 
-                <div className="mt-6 flex items-center">
-                  <input
-                    type="checkbox"
-                    id="useSameAddressForBilling"
-                    name="useSameAddressForBilling"
-                    checked={formData.useSameAddressForBilling}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="useSameAddressForBilling" className="ml-2 block text-sm text-gray-900">
-                    Use same address for billing
-                  </label>
-                </div>
+                    <div className="mt-4">
+                      <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-2">
+                        Address Line 1 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="addressLine1"
+                        name="addressLine1"
+                        value={formData.addressLine1}
+                        onChange={handleInputChange}
+                        placeholder="Street address, P.O. Box"
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700 mb-2">
+                        Address Line 2 (Apartment, suite, etc. - optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="addressLine2"
+                        name="addressLine2"
+                        value={formData.addressLine2}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                          City <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          required
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                          State <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          id="state"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                          required
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm bg-white"
+                        >
+                          <option value="">Select State</option>
+                          {indianStates.map((state) => (
+                            <option key={state} value={state}>
+                              {state}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="pinCode" className="block text-sm font-medium text-gray-700 mb-2">
+                          PIN Code <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="pinCode"
+                          name="pinCode"
+                          value={formData.pinCode}
+                          onChange={handleInputChange}
+                          required
+                          pattern="[0-9]{6}"
+                          title="Please enter a 6-digit PIN code"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone (optional)
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex items-center">
+                      <input
+                        type="checkbox"
+                        id="useSameAddressForBilling"
+                        name="billingSameAsShipping"
+                        checked={formData.billingSameAsShipping}
+                        onChange={handleInputChange}
+                        className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="useSameAddressForBilling" className="ml-2 block text-sm text-gray-900">
+                        Use same address for billing
+                      </label>
+                    </div>
+
+                    {isUserLoggedIn && (selectedAddressId === null || isEditingAddress) && (
+                        <div className="mt-6">
+                            <motion.button
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                type="button"
+                                onClick={handleSaveAddress}
+                                className="w-full py-3 bg-amber-500 text-white rounded-lg text-md font-bold
+                                            hover:bg-amber-600 transition-all shadow-sm flex items-center justify-center gap-2"
+                            >
+                                {isEditingAddress ? (
+                                    <>
+                                        <PencilSquareIcon className="h-5 w-5" />
+                                        <span>Update Address</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <PlusCircleIcon className="h-5 w-5" />
+                                        <span>Save Address</span>
+                                    </>
+                                )}
+                            </motion.button>
+                            {isEditingAddress && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsEditingAddress(false);
+                                        // Revert to selected address data if editing is cancelled
+                                        if (selectedAddressId) {
+                                            const originalAddress = savedAddresses.find(addr => addr.id === selectedAddressId);
+                                            if (originalAddress) {
+                                                setFormDataFromAddress(originalAddress);
+                                            }
+                                        }
+                                    }}
+                                    className="mt-2 w-full py-2 text-center text-gray-600 hover:text-gray-800 transition-colors text-sm font-medium"
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
 
               {/* Shipping Options */}
@@ -497,11 +849,13 @@ export default function CheckoutPage() {
                     />
                     <span>Flat rate</span>
                   </label>
-                  <span className="font-semibold">₹{cart.shippingCost?.toFixed(2)}</span>
+                  <span className={`font-semibold ${cart.shippingCost === 0 ? 'text-green-600' : 'text-gray-800'}`}>
+                    {cart.shippingCost === 0 ? 'Free Shipping' : `₹${cart.shippingCost?.toFixed(2)}`}
+                  </span>
                 </div>
               </div>
 
-              {/* Payment Options */}
+              {/* Payment Options (remains largely same) */}
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Options</h2>
                 <div className="space-y-4">
@@ -511,8 +865,7 @@ export default function CheckoutPage() {
                       id="payByRazorpay"
                       name="paymentMethod"
                       value="razorpay"
-                      checked // Default selected
-                      readOnly
+                      defaultChecked
                       className="h-4 w-4 text-amber-600 border-gray-300 focus:ring-amber-500"
                     />
                     <label htmlFor="payByRazorpay" className="flex-1">
@@ -525,10 +878,10 @@ export default function CheckoutPage() {
                       </p>
                     </label>
                     <Image
-                        src="https://razorpay.com/assets/razorpay-logo.svg" // Official Razorpay logo URL
+                        src="https://razorpay.com/assets/razorpay-logo.svg"
                         alt="Razorpay"
-                        width={60} // Adjust width as needed
-                        height={15} // Adjust height as needed
+                        width={60}
+                        height={15}
                         className="object-contain"
                         unoptimized
                     />
@@ -540,7 +893,7 @@ export default function CheckoutPage() {
                       id="payByCod"
                       name="paymentMethod"
                       value="cod"
-                      disabled={cart.total > 5000} // Example: Disable COD for large orders
+                      disabled={cart.total > 5000}
                       className="h-4 w-4 text-amber-600 border-gray-300 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <label htmlFor="payByCod" className="flex-1 flex flex-col">
@@ -565,13 +918,15 @@ export default function CheckoutPage() {
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Additional Information</h2>
                 <div>
-                  <label htmlFor="orderNotes" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
                     Add a note to your order (optional)
                   </label>
                   <textarea
-                    id="orderNotes"
-                    name="orderNotes"
+                    id="note"
+                    name="note"
                     rows="4"
+                    value={formData.note}
+                    onChange={handleInputChange}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                     placeholder="e.g., 'Deliver after 5 PM', 'Leave at doorstep'"
                   ></textarea>
@@ -597,8 +952,10 @@ export default function CheckoutPage() {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   type="submit"
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-lg font-bold
-                            hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg"
+                  disabled={isPlaceOrderDisabled()} // Disable based on new logic
+                  className={`w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-lg font-bold
+                            hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg
+                            ${isPlaceOrderDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Place Order
                 </motion.button>
