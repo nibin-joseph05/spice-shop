@@ -43,15 +43,15 @@ export default function CheckoutPage() {
 
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
-  const [selectedAddressId, setSelectedAddressId] = useState(null); // null for new address, ID for existing
-  const [isEditingAddress, setIsEditingAddress] = useState(false); // New state for editing existing address
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [userSessionData, setUserSessionData] = useState(null); // Store user session data
 
   const router = useRouter();
 
   // Helper to display transient messages
   const showMessage = (msg, isSuccess = false) => {
     setFormMessage(msg);
-    // You can add a class here for success/error styling if needed
     setTimeout(() => setFormMessage(''), 5000);
   };
 
@@ -95,41 +95,58 @@ export default function CheckoutPage() {
         const data = await response.json();
         if (data.success && Array.isArray(data.addresses) && data.addresses.length > 0) {
           setSavedAddresses(data.addresses);
-          // Set initial selection: If no address was previously selected, or selected one is gone,
-          // default to the first saved address, or keep 'new' selected.
           if (!selectedAddressId || !data.addresses.some(addr => addr.id === selectedAddressId)) {
-            setSelectedAddressId(data.addresses[0].id); // Select the first address by default
+            setSelectedAddressId(data.addresses[0].id);
             setFormDataFromAddress(data.addresses[0]);
-            setIsEditingAddress(false); // Not editing when selecting
+            setIsEditingAddress(false);
           } else {
-            // Re-populate if the selected address is still there (e.g., after an edit)
             const currentSelected = data.addresses.find(addr => addr.id === selectedAddressId);
             if (currentSelected) {
                 setFormDataFromAddress(currentSelected);
             }
-            setIsEditingAddress(false); // Not editing when selecting
+            setIsEditingAddress(false);
           }
         } else {
+          // No addresses found or success: false, but response.ok is true (e.g., 200 OK with empty addresses array)
           setSavedAddresses([]);
-          setSelectedAddressId(null); // No saved addresses, default to new
+          setSelectedAddressId(null);
+          resetFormDataForNewAddress();
+          setIsEditingAddress(false);
+          // Optionally, log a message here if it's unexpected for no addresses to be found
+          // console.warn('User has no saved addresses.');
+        }
+      } else {
+          // Handle non-OK responses (e.g., 401, 403, 500)
+          let errorMessage = 'Failed to fetch user addresses. Please try again.';
+          try {
+            const errorData = await response.json();
+            if (errorData && errorData.message) {
+              errorMessage = errorData.message;
+            }
+            console.error('Failed to fetch user addresses:', errorData); // Log detailed error
+          } catch (jsonError) {
+            // This catch block handles cases where response.json() fails (e.g., empty body or invalid JSON)
+            console.error('Failed to parse error response:', response.status, response.statusText);
+            errorMessage = `Failed to fetch user addresses. Server responded with status: ${response.status} ${response.statusText || ''}.`;
+          }
+          // You might want to set a more prominent error state for the user here
+          // setError(errorMessage); // If you have a global error state to display to the user
+          console.error('Error fetching user addresses (non-OK response):', errorMessage);
+          setSavedAddresses([]);
+          setSelectedAddressId(null);
           resetFormDataForNewAddress();
           setIsEditingAddress(false);
         }
-      } else {
-        console.error('Failed to fetch user addresses:', await response.json());
-        setSavedAddresses([]);
-        setSelectedAddressId(null);
-        resetFormDataForNewAddress();
-        setIsEditingAddress(false);
-      }
     } catch (err) {
-      console.error('Error fetching user addresses:', err);
+      // This catch block handles network errors or other unexpected issues with fetch
+      console.error('Network or unexpected error fetching user addresses:', err);
+      // setError('An unexpected error occurred while fetching addresses.'); // Display to user
       setSavedAddresses([]);
       setSelectedAddressId(null);
       resetFormDataForNewAddress();
       setIsEditingAddress(false);
     }
-  }, [selectedAddressId]); // Re-run if selectedAddressId changes (e.g. after adding a new one)
+  }, [selectedAddressId, isUserLoggedIn, userSessionData]); // Added dependencies
 
   const checkUserSession = async () => {
     try {
@@ -140,27 +157,31 @@ export default function CheckoutPage() {
       if (response.ok) {
         const data = await response.json();
         setIsUserLoggedIn(true);
-        // Pre-fill email, first name, and last name if user is logged in
+        setUserSessionData(data); // Store the user session data
+
+        // Update form data with user information
         setFormData(prev => ({
           ...prev,
-          email: data.email || '',
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
+          email: data.email || prev.email,
+          firstName: data.firstName || prev.firstName,
+          lastName: data.lastName || prev.lastName,
         }));
-        await fetchUserAddresses(); // Fetch addresses if logged in
+
+        await fetchUserAddresses();
       } else {
         setIsUserLoggedIn(false);
+        setUserSessionData(null);
         setSavedAddresses([]);
         setSelectedAddressId(null);
-        resetFormDataForNewAddress(); // Clear form for guest checkout
+        // Don't reset form data here if user is guest
         setIsEditingAddress(false);
       }
     } catch (err) {
       console.error('Session check error:', err);
       setIsUserLoggedIn(false);
+      setUserSessionData(null);
       setSavedAddresses([]);
       setSelectedAddressId(null);
-      resetFormDataForNewAddress();
       setIsEditingAddress(false);
     }
   };
@@ -168,10 +189,10 @@ export default function CheckoutPage() {
   const resetFormDataForNewAddress = () => {
     setFormData(prev => ({
       ...prev,
-      // Keep email, first name, last name if user is logged in, otherwise clear
-      email: isUserLoggedIn ? prev.email : '',
-      firstName: isUserLoggedIn ? prev.firstName : '',
-      lastName: isUserLoggedIn ? prev.lastName : '',
+      // Keep user info if logged in, otherwise keep current values
+      email: isUserLoggedIn && userSessionData ? userSessionData.email : prev.email,
+      firstName: isUserLoggedIn && userSessionData ? userSessionData.firstName : prev.firstName,
+      lastName: isUserLoggedIn && userSessionData ? userSessionData.lastName : prev.lastName,
       addressLine1: '',
       addressLine2: '',
       city: '',
@@ -186,6 +207,8 @@ export default function CheckoutPage() {
   const setFormDataFromAddress = (address) => {
     setFormData(prev => ({
       ...prev,
+      // Always preserve user session data for email, firstName, lastName
+      email: isUserLoggedIn && userSessionData ? userSessionData.email : prev.email,
       firstName: address.firstName,
       lastName: address.lastName,
       addressLine1: address.addressLine1,
@@ -202,7 +225,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetchCart();
     checkUserSession();
-  }, []); // Empty dependency array, runs once on mount
+  }, []);
 
   // Recalculate totals
   const recalculateTotals = (currentCart) => {
@@ -231,7 +254,7 @@ export default function CheckoutPage() {
   const handleAddressSelection = (e) => {
     const id = e.target.value === 'new' ? null : Number(e.target.value);
     setSelectedAddressId(id);
-    setIsEditingAddress(false); // Always stop editing when selecting new or existing
+    setIsEditingAddress(false);
 
     if (id === null) {
       resetFormDataForNewAddress();
@@ -281,7 +304,6 @@ export default function CheckoutPage() {
         let data;
 
         if (isEditingAddress && selectedAddressId) {
-            // Update existing address
             response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses/${selectedAddressId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -289,7 +311,6 @@ export default function CheckoutPage() {
                 credentials: 'include',
             });
         } else {
-            // Add new address
             response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -305,12 +326,11 @@ export default function CheckoutPage() {
         }
 
         showMessage(`Address ${isEditingAddress ? 'updated' : 'saved'} successfully!`, true);
-        await fetchUserAddresses(); // Refresh addresses after save/update
-        // Automatically select the newly saved address if it was a new one
+        await fetchUserAddresses();
         if (!isEditingAddress && data.address && data.address.id) {
             setSelectedAddressId(data.address.id);
         }
-        setIsEditingAddress(false); // Exit edit mode after saving
+        setIsEditingAddress(false);
     } catch (err) {
         showMessage(err.message, false);
         console.error('Error saving address:', err);
@@ -335,23 +355,21 @@ export default function CheckoutPage() {
         }
 
         showMessage('Address deleted successfully!', true);
-        await fetchUserAddresses(); // Refresh the list
-        setSelectedAddressId(null); // Deselect if the deleted address was selected
-        resetFormDataForNewAddress(); // Clear form and show new address input
+        await fetchUserAddresses();
+        setSelectedAddressId(null);
+        resetFormDataForNewAddress();
     } catch (err) {
         showMessage(err.message, false);
         console.error('Error deleting address:', err);
     }
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormMessage('');
 
-    // Ensure a valid address is selected or entered
     if (!selectedAddressId && (!isEditingAddress && !validateAddressForm())) {
-        return; // validateAddressForm will show message
+        return;
     }
 
     if (!cart || cart.items.length === 0) {
@@ -362,15 +380,12 @@ export default function CheckoutPage() {
     let shippingAddressPayload;
 
     if (isEditingAddress) {
-        // If editing, use current formData, but validate and save first
         showMessage('Please save the edited address before placing the order.', false);
         return;
     } else if (selectedAddressId) {
-        // If an existing address is selected, send its ID
         shippingAddressPayload = { id: selectedAddressId };
     } else {
-        // If "Add new address" is selected, and form is valid, send the full form data
-        if (!validateAddressForm()) return; // Re-validate new address form
+        if (!validateAddressForm()) return;
         shippingAddressPayload = {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -392,7 +407,7 @@ export default function CheckoutPage() {
         packWeightInGrams: item.packWeightInGrams,
         price: item.price
       })),
-      shippingAddress: shippingAddressPayload, // This will be either {id: X} or a full address object
+      shippingAddress: shippingAddressPayload,
       paymentMethod: document.querySelector('input[name="paymentMethod"]:checked')?.value || 'razorpay',
       orderNotes: formData.note,
       totalAmount: cart.total,
@@ -426,25 +441,16 @@ export default function CheckoutPage() {
     }
   };
 
-
-  // Determine if "Place Order" button should be disabled
   const isPlaceOrderDisabled = () => {
-    // If no address is selected AND we're not explicitly adding/editing a new one
     if (!selectedAddressId && !isEditingAddress) return true;
-
-    // If adding/editing a new address, ensure form is valid
     if ((selectedAddressId === null || isEditingAddress) && !validateAddressForm()) {
         return true;
     }
-
-    // If in edit mode, user should save changes before placing order
     if (isEditingAddress) {
         return true;
     }
-
     return false;
   };
-
 
   if (loading) {
     return (
