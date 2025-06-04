@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import { PlusIcon, MinusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/solid';
+import { CreditCardIcon, TruckIcon } from '@heroicons/react/24/outline'; // Importing new icons
 
 const cartItemAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -36,6 +38,7 @@ export default function CartPage() {
   const [featuredSpices, setFeaturedSpices] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(false);
   const [quantityMessage, setQuantityMessage] = useState('');
+  const router = useRouter();
 
   const fetchCart = async () => {
     setLoading(true);
@@ -145,8 +148,7 @@ export default function CartPage() {
     } catch (error) {
       setQuantityMessage(error.message || 'Failed to update quantity.'); // Display error message
       setTimeout(() => setQuantityMessage(''), 3000); // Clear message after 3 seconds
-//      console.error('Update quantity error:', error);
-//      // Revert on error
+
       setCart(previousCart);
     } finally {
       setIsUpdating(false);
@@ -202,15 +204,14 @@ export default function CartPage() {
       );
 
       const shippingCost = subtotal >= 500 ? 0 : 50;
-      const taxRate = 0.18;
-      const taxes = subtotal * taxRate;
-      const total = subtotal + shippingCost + taxes;
+
+      const total = subtotal + shippingCost; // Taxes removed from total calculation
 
       return {
         ...prev,
         subtotal,
         shippingCost,
-        taxes,
+
         total
       };
     });
@@ -222,8 +223,8 @@ export default function CartPage() {
       setTimeout(() => setQuantityMessage(''), 3000);
       return;
     }
-    // Redirect to checkout page
-    // router.push('/checkout');
+
+     router.push('/checkout');
     setQuantityMessage('Proceeding to checkout...'); // Display message
     setTimeout(() => setQuantityMessage(''), 3000);
   };
@@ -511,12 +512,7 @@ export default function CartPage() {
                       )}
                     </span>
                   </div>
-                  <div className="flex justify-between pb-3">
-                    <span className="text-gray-600">Taxes (18% GST)</span>
-                    <span className="font-medium text-gray-800">
-                      ₹{(cart.subtotal * 0.18).toFixed(2)}
-                    </span>
-                  </div>
+                  {/* Taxes section removed */}
                   <div className="pt-4 mt-4 border-t border-gray-100">
                     <div className="flex justify-between text-lg font-bold text-gray-900">
                       <span>Order Total</span>
@@ -538,10 +534,23 @@ export default function CartPage() {
                 </motion.button>
 
                 <div className="mt-6 text-center">
-                  <p className="text-gray-500 text-sm mb-2">Accepted Payment Method</p>
-                  <div className="flex justify-center items-center gap-2 bg-gray-50 py-2 rounded-lg">
-                    <div className="bg-gray-100 w-20 h-6 rounded-sm flex items-center justify-center font-medium text-sm">
-                      Razorpay
+                  <p className="text-gray-500 text-sm mb-2">Accepted Payment Methods</p>
+                  <div className="flex justify-center items-center gap-4 bg-gray-50 py-3 rounded-lg">
+                    {/* Razorpay Logo */}
+                    <div className="flex items-center justify-center">
+                      <Image
+                        src="https://razorpay.com/assets/razorpay-logo.svg" // Official Razorpay logo URL
+                        alt="Razorpay"
+                        width={80}
+                        height={20}
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    {/* Cash on Delivery */}
+                    <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-md font-medium text-sm text-gray-700">
+                      <TruckIcon className="h-5 w-5 text-gray-500" />
+                      <span>Cash on Delivery</span>
                     </div>
                   </div>
                 </div>

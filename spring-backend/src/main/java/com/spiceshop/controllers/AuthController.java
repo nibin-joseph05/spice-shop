@@ -168,9 +168,20 @@ public class AuthController {
                     Map.of("success", false, "message", "Not authenticated")
             );
         }
-        return ResponseEntity.ok(
-                Map.of("success", true, "userId", userId)
-        );
+        // Fetch the user from the repository using the userId
+        Optional<User> userOpt = userRepository.findById((Long) userId); // Assuming userId is Long
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            return ResponseEntity.ok(
+                    Map.of("success", true, "userId", userId, "email", user.getEmail(), "firstName", user.getFirstName(), "lastName", user.getLastName())
+            );
+        } else {
+            // If userId is in session but user not found (shouldn't happen often)
+            session.invalidate(); // Invalidate session if user not found
+            return ResponseEntity.status(401).body(
+                    Map.of("success", false, "message", "User not found for session")
+            );
+        }
     }
 
     @PostMapping("/logout")
