@@ -365,80 +365,32 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormMessage('');
+      e.preventDefault();
+      setFormMessage('');
 
-    if (!selectedAddressId && (!isEditingAddress && !validateAddressForm())) {
-        return;
-    }
-
-    if (!cart || cart.items.length === 0) {
-      showMessage('Your cart is empty. Cannot place an order.', false);
-      return;
-    }
-
-    let shippingAddressPayload;
-
-    if (isEditingAddress) {
-        showMessage('Please save the edited address before placing the order.', false);
-        return;
-    } else if (selectedAddressId) {
-        shippingAddressPayload = { id: selectedAddressId };
-    } else {
-        if (!validateAddressForm()) return;
-        shippingAddressPayload = {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            addressLine1: formData.addressLine1,
-            addressLine2: formData.addressLine2,
-            city: formData.city,
-            state: formData.state,
-            pinCode: formData.pinCode,
-            phone: formData.phone,
-            note: formData.note,
-            billingSameAsShipping: formData.billingSameAsShipping,
-        };
-    }
-
-    const orderPayload = {
-      cartItems: cart.items.map(item => ({
-        spiceId: item.spiceId,
-        quantity: item.quantity,
-        packWeightInGrams: item.packWeightInGrams,
-        price: item.price
-      })),
-      shippingAddress: shippingAddressPayload,
-      paymentMethod: document.querySelector('input[name="paymentMethod"]:checked')?.value || 'razorpay',
-      orderNotes: formData.note,
-      totalAmount: cart.total,
-    };
-
-    console.log('Order Payload:', orderPayload);
-    showMessage('Proceeding with order...');
-
-    try {
-      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders/place`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderPayload),
-        credentials: 'include'
-      });
-
-      const responseData = await orderResponse.json();
-
-      if (!orderResponse.ok || !responseData.success) {
-        throw new Error(responseData.message || 'Failed to place order. Please try again.');
+      if (!selectedAddressId && (!isEditingAddress && !validateAddressForm())) {
+          showMessage('Please complete your shipping address details.', false);
+          return;
       }
 
-      showMessage('Order placed successfully! Redirecting...', true);
-      router.push(`/order-confirmation/${responseData.orderId}`);
+      if (!cart || cart.items.length === 0) {
+        showMessage('Your cart is empty. Cannot proceed to payment.', false);
+        return;
+      }
 
-    } catch (err) {
-      showMessage(err.message, false);
-      console.error('Order placement error:', err);
-    }
+      if (isEditingAddress) {
+          showMessage('Please save the edited address or cancel editing before proceeding.', false);
+          return;
+      }
+
+      showMessage('Redirecting to payment...', true);
+
+      if (selectedAddressId) {
+          router.push(`/checkout/payment?addressId=${selectedAddressId}`);
+      } else {
+
+          router.push(`/checkout/payment`);
+      }
   };
 
   const isPlaceOrderDisabled = () => {
