@@ -732,6 +732,25 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
+                    {/* Order Notes */}
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Delivery Instructions</h3>
+                        <div>
+                          <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
+                            Special delivery instructions (optional)
+                          </label>
+                          <textarea
+                            id="note"
+                            name="note"
+                            rows="4"
+                            value={formData.note}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                            placeholder="e.g., 'Ring doorbell twice', 'Deliver to back entrance', 'Call before delivery'"
+                          ></textarea>
+                        </div>
+                      </div>
+
                     <div className="mt-6 flex items-center">
                       <input
                         type="checkbox"
@@ -813,83 +832,36 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Options (remains largely same) */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Options</h2>
-                <div className="space-y-4">
-                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-center gap-4">
-                    <input
-                      type="radio"
-                      id="payByRazorpay"
-                      name="paymentMethod"
-                      value="razorpay"
-                      defaultChecked
-                      className="h-4 w-4 text-amber-600 border-gray-300 focus:ring-amber-500"
-                    />
-                    <label htmlFor="payByRazorpay" className="flex-1">
-                      <div className="font-medium text-gray-800 flex items-center gap-2">
-                        <CreditCardIcon className="h-5 w-5 text-gray-600" />
-                        <span>Pay by Razorpay</span>
+              {/* Payment Methods */}
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Methods</h2>
+                  <div className="mt-6 text-center">
+                    <p className="text-gray-500 text-sm mb-2">Accepted Payment Methods</p>
+                    <div className="flex justify-center items-center gap-4 bg-gray-50 py-3 rounded-lg">
+                      {/* Razorpay Logo */}
+                      <div className="flex items-center justify-center">
+                        <Image
+                          src="https://razorpay.com/assets/razorpay-logo.svg"
+                          alt="Razorpay"
+                          width={80}
+                          height={20}
+                          className="object-contain"
+                          unoptimized
+                        />
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Pay securely by Credit or Debit card or Internet Banking through Razorpay.
-                      </p>
-                    </label>
-                    <Image
-                        src="https://razorpay.com/assets/razorpay-logo.svg"
-                        alt="Razorpay"
-                        width={60}
-                        height={15}
-                        className="object-contain"
-                        unoptimized
-                    />
-                  </div>
-
-                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-center gap-4">
-                    <input
-                      type="radio"
-                      id="payByCod"
-                      name="paymentMethod"
-                      value="cod"
-                      disabled={cart.total > 5000}
-                      className="h-4 w-4 text-amber-600 border-gray-300 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <label htmlFor="payByCod" className="flex-1 flex flex-col">
-                      <div className="font-medium text-gray-800 flex items-center gap-2">
-                        <TruckIcon className="h-5 w-5 text-gray-600" />
+                      {/* Cash on Delivery */}
+                      <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-md font-medium text-sm text-gray-700">
+                        <TruckIcon className="h-5 w-5 text-gray-500" />
                         <span>Cash on Delivery</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Pay with cash upon delivery.
                         {cart.total > 5000 && (
-                          <span className="text-red-500 block text-xs">
-                            (COD not available for orders over ₹5000)
+                          <span className="text-red-500 text-xs ml-1">
+                            (Not available for orders over ₹5000)
                           </span>
                         )}
-                      </p>
-                    </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Order Notes */}
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Additional Information</h2>
-                <div>
-                  <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
-                    Add a note to your order (optional)
-                  </label>
-                  <textarea
-                    id="note"
-                    name="note"
-                    rows="4"
-                    value={formData.note}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                    placeholder="e.g., 'Deliver after 5 PM', 'Leave at doorstep'"
-                  ></textarea>
-                </div>
-              </div>
 
               {/* Terms and Conditions */}
               <div className="text-center text-sm text-gray-600">
@@ -915,7 +887,7 @@ export default function CheckoutPage() {
                             hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg
                             ${isPlaceOrderDisabled() ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  Place Order
+                  Proceed to Payment
                 </motion.button>
                 <a
                   href="/cart"
