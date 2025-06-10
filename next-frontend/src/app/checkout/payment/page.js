@@ -1,8 +1,6 @@
-// components/checkout/PaymentPage.js (or wherever your PaymentPage component resides)
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -11,6 +9,7 @@ import {
   TruckIcon,
   CheckCircleIcon,
   XCircleIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import Footer from '@/components/home/Footer';
 
@@ -20,29 +19,27 @@ export default function PaymentPage() {
   const addressId = searchParams.get('addressId');
   const tempAddressData = searchParams.get('tempAddress') ? JSON.parse(decodeURIComponent(searchParams.get('tempAddress'))) : null;
 
-
   const [user, setUser] = useState(null);
-  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false); // New state to track login
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [userLoading, setUserLoading] = useState(true);
   const [cart, setCart] = useState(null);
 
   const [shippingAddress, setShippingAddress] = useState(null);
-  const [loading, setLoading] = useState(true); // Overall loading for the page
+  const [loading, setLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('razorpay');
 
-  const showMessage = (msg, isSuccess) => {
+  const showMessage = useCallback((msg, isSuccess) => {
     setPaymentMessage(msg);
     setPaymentStatus(isSuccess ? 'success' : 'failure');
     setTimeout(() => {
       setPaymentMessage('');
       setPaymentStatus(null);
     }, 5000);
-  };
+  }, []);
 
-  // Function to fetch user session
   const checkUserSession = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check-session`, {
@@ -52,24 +49,23 @@ export default function PaymentPage() {
       if (response.ok) {
         const data = await response.json();
         setIsUserLoggedIn(true);
-        setUser(data); // Set the actual user data
+        setUser(data);
       } else {
         setIsUserLoggedIn(false);
         setUser(null);
-        router.push('/login?redirect=/checkout/payment'); // Redirect if not logged in
+        router.push('/login?redirect=/checkout/payment');
       }
     } catch (err) {
       console.error('Session check error:', err);
       setIsUserLoggedIn(false);
       setUser(null);
-      router.push('/login?redirect=/checkout/payment'); // Redirect on error
+      router.push('/login?redirect=/checkout/payment');
     } finally {
       setUserLoading(false);
     }
   };
 
-  // Function to fetch cart data
-  const fetchCartData = async () => {
+  const fetchCartData = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/cart`, {
         credentials: 'include'
@@ -88,7 +84,6 @@ export default function PaymentPage() {
         setCart({ items: [] });
         throw new Error('Your cart is empty. Please add items before checking out.');
       }
-      // Recalculate totals as a safeguard, though your backend should also provide them
       const subtotal = cartData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const shippingCost = subtotal >= 500 ? 0 : 50;
       const total = subtotal + shippingCost;
@@ -102,11 +97,10 @@ export default function PaymentPage() {
     } catch (err) {
       console.error('Cart fetch error:', err.message);
       showMessage(err.message, false);
-      setCart(null); // Set cart to null to show empty cart message
+      setCart(null);
     }
-  };
+  }, [showMessage]);
 
-  // Function to fetch address by ID (used for saved addresses)
   const fetchAddressById = useCallback(async (id) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/me/addresses/${id}`, {
@@ -126,55 +120,47 @@ export default function PaymentPage() {
       showMessage('Could not retrieve selected address. Please check your address details.', false);
       return null;
     }
+  }, [showMessage]);
+
+  useEffect(() => {
+    checkUserSession();
   }, []);
 
   useEffect(() => {
-    const loadAllOrderData = async () => {
-      setUserLoading(true);
-      await checkUserSession(); // This will set user and handle redirection
-    };
-    loadAllOrderData();
-  }, []); // Run once on component mount
+    if (!userLoading) {
+      if (user) {
+        const fetchPageData = async () => {
+          setLoading(true);
+          try {
+            await fetchCartData();
 
-  useEffect(() => {
-    if (!userLoading && user) { // Only proceed if user session check is done and user is logged in
-      const fetchPageData = async () => {
-        setLoading(true);
-        try {
-          await fetchCartData(); // Fetch the real cart data
-
-          if (addressId) {
-            const address = await fetchAddressById(Number(addressId));
-            if (address) {
-              setShippingAddress(address);
+            if (addressId) {
+              const address = await fetchAddressById(Number(addressId));
+              if (address) {
+                setShippingAddress(address);
+              } else {
+                showMessage('Selected address not found. Please review your address or select a new one.', false);
+                router.push('/checkout');
+              }
+            } else if (tempAddressData) {
+              setShippingAddress(tempAddressData);
             } else {
-
-              showMessage('Selected address not found. Please review your address or select a new one.', false);
+              showMessage('No shipping address provided. Please enter or select one.', false);
               router.push('/checkout');
             }
-          } else if (tempAddressData) {
-            // Use temporary address data if available from query param
-            setShippingAddress(tempAddressData);
-          } else {
-
-            showMessage('No shipping address provided. Please enter or select one.', false);
-            router.push('/checkout');
+          } catch (error) {
+            console.error('Error loading order data:', error);
+          } finally {
+            setLoading(false);
           }
-        } catch (error) {
-          console.error('Error loading order data:', error);
-          // Error messages are already handled by individual fetch functions
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchPageData();
-    } else if (!userLoading && !user) {
-      // If user is not logged in, redirection already handled by checkUserSession
-      setLoading(false);
+        };
+        fetchPageData();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [userLoading, user, addressId, tempAddressData, fetchAddressById, router]); // Depend on userLoading, user, and address data
+  }, [userLoading, user, addressId, tempAddressData, fetchAddressById, fetchCartData, router, showMessage]);
 
-  // Razorpay script loading remains the same
   useEffect(() => {
     const loadRazorpayScript = () => {
       const script = document.createElement('script');
@@ -193,13 +179,11 @@ export default function PaymentPage() {
     loadRazorpayScript();
   }, []);
 
-
   const handlePaymentMethodChange = (e) => {
     setSelectedPaymentMethod(e.target.value);
   };
 
   const clearCartLocally = async () => {
-    // Clear cart on the backend
     try {
       await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/cart/clear`, {
         method: 'POST',
@@ -208,14 +192,18 @@ export default function PaymentPage() {
     } catch (error) {
       console.error('Failed to clear cart on backend:', error);
     }
-    // Clear local cart state
     setCart({ items: [], subtotal: 0, shippingCost: 0, total: 0, id: 'new-cart' });
   };
 
-
   const handlePlaceOrderAndPay = async () => {
-    if (!cart || cart.items.length === 0 || !shippingAddress || !user) {
-      showMessage('Missing order details. Please go back to checkout.', false);
+    if (!user) {
+      showMessage('You must be logged in to place an order. Redirecting to login...', false);
+      router.push('/login?redirect=/checkout/payment');
+      return;
+    }
+
+    if (!cart || cart.items.length === 0 || !shippingAddress) {
+      showMessage('Missing order details (cart or shipping address). Please go back to checkout.', false);
       return;
     }
 
@@ -225,17 +213,9 @@ export default function PaymentPage() {
 
     try {
       const orderPayload = {
-        userId: user.id, // Use actual user ID from state
-        cartItems: cart.items.map(item => ({
-          spiceId: item.spiceId,
-          quantity: item.quantity,
-          packWeightInGrams: item.packWeightInGrams,
-          price: item.price
-        })),
         shippingAddress: shippingAddress,
         paymentMethod: selectedPaymentMethod,
         orderNotes: '',
-        totalAmount: cart.total,
       };
 
       console.log('Sending orderPayload to backend:', orderPayload);
@@ -255,16 +235,21 @@ export default function PaymentPage() {
         throw new Error(responseData.message || 'Failed to initiate order. Please try again.');
       }
 
-      showMessage('Order initiated. Proceeding to payment gateway...', true);
+      const orderDetails = responseData.data;
 
-      if (selectedPaymentMethod === 'razorpay' && responseData.razorpayOrderId) {
+      if (selectedPaymentMethod === 'razorpay') {
+        if (!orderDetails.razorpayOrderId) {
+            throw new Error('Razorpay Order ID missing for online payment.');
+        }
+        showMessage('Order initiated. Proceeding to payment gateway...', true);
+
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: responseData.amount * 100, // Razorpay amounts are in paisa/cents
+          amount: orderDetails.totalAmount * 100,
           currency: "INR",
-          name: "Your Store Name",
-          description: "Purchase Description",
-          order_id: responseData.razorpayOrderId,
+          name: "Spice Shop",
+          description: `Order ${orderDetails.orderNumber}`,
+          order_id: orderDetails.razorpayOrderId,
           handler: async function (response) {
             console.log("Razorpay Payment Success:", response);
             setPaymentMessage('Payment successful! Verifying order...', true);
@@ -274,10 +259,10 @@ export default function PaymentPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  orderId: responseData.orderId, // Order ID from your backend
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  orderId: orderDetails.orderId,
                 }),
                 credentials: 'include',
               });
@@ -286,8 +271,8 @@ export default function PaymentPage() {
 
               if (verifyResponse.ok && verifyData.success) {
                 showMessage('Payment verified and order confirmed!', true);
-                await clearCartLocally(); // Clear cart on success
-                router.push(`/order-confirmation?orderId=${responseData.orderId}`);
+                await clearCartLocally();
+                router.push(`/order-confirmation?orderId=${orderDetails.orderId}`);
               } else {
                 throw new Error(verifyData.message || 'Payment verification failed. Please contact support.');
               }
@@ -295,6 +280,8 @@ export default function PaymentPage() {
               console.error('Payment verification error:', verifyErr);
               showMessage(verifyErr.message || 'Error verifying payment. Your order might be pending.', false);
               setPaymentStatus('failure');
+            } finally {
+              setLoading(false);
             }
           },
           prefill: {
@@ -303,7 +290,7 @@ export default function PaymentPage() {
             contact: shippingAddress.phone || '',
           },
           notes: {
-            orderId: responseData.orderId,
+            orderId: orderDetails.orderId,
           },
           theme: {
             color: "#F59E0B"
@@ -314,15 +301,16 @@ export default function PaymentPage() {
         rzp.on('payment.failed', function (response) {
           console.error("Razorpay Payment Failed:", response);
           showMessage(response.error.description || 'Payment failed. Please try again.', false);
+          setLoading(false);
         });
         rzp.open();
 
       } else if (selectedPaymentMethod === 'cod') {
         showMessage('Cash on Delivery selected. Order placed successfully!', true);
-        await clearCartLocally(); // Clear cart for COD as well
-        router.push(`/order-confirmation?orderId=${responseData.orderId}`);
+        await clearCartLocally();
+        router.push(`/order-confirmation?orderId=${orderDetails.orderId}`);
       } else {
-          throw new Error('Invalid payment method selected or missing Razorpay Order ID for online payment.');
+          throw new Error('Invalid payment method selected.');
       }
 
     } catch (err) {
@@ -334,7 +322,7 @@ export default function PaymentPage() {
     }
   };
 
-  if (loading || userLoading) {
+  if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center text-amber-600">
@@ -342,13 +330,48 @@ export default function PaymentPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="mt-4 text-lg font-medium">Loading payment details...</p>
+          <p className="mt-4 text-lg font-medium">Checking authentication and loading payment details...</p>
         </div>
       </div>
     );
   }
 
-  // Handle cases where cart is empty after fetching real data
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center">
+          <ExclamationCircleIcon className="h-16 w-16 text-orange-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">
+            You need to be logged in to access the payment page. Redirecting to login...
+          </p>
+          <button
+            onClick={() => router.push('/login?redirect=/checkout/payment')}
+            className="py-3 px-6 bg-amber-500 text-white rounded-lg text-md font-bold
+                       hover:bg-amber-600 transition-all shadow-sm"
+          >
+            Go to Login
+          </button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center text-amber-600">
+          <svg className="animate-spin h-10 w-10 text-amber-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="mt-4 text-lg font-medium">Loading Please Wait...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!cart || cart.items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
@@ -396,14 +419,15 @@ export default function PaymentPage() {
                       Pay securely by Credit or Debit card or Internet Banking through Razorpay.
                     </p>
                   </label>
-                  <Image
-                      src="https://razorpay.com/assets/razorpay-logo.svg"
-                      alt="Razorpay"
-                      width={60}
-                      height={15}
-                      className="object-contain"
-                      unoptimized
-                  />
+                  <div className="relative w-[60px] h-[15px]">
+                    <Image
+                        src="https://razorpay.com/assets/razorpay-logo.svg"
+                        alt="Razorpay"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                    />
+                  </div>
                 </div>
 
                 <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-center gap-4">
@@ -457,10 +481,10 @@ export default function PaymentPage() {
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={handlePlaceOrderAndPay}
-                disabled={loading || !shippingAddress || !cart || cart.items.length === 0}
+                disabled={loading || !shippingAddress || !cart || cart.items.length === 0 || !user}
                 className={`w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-lg font-bold
                             hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg
-                            ${(loading || !shippingAddress || !cart || cart.items.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            ${(loading || !shippingAddress || !cart || cart.items.length === 0 || !user) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? 'Processing...' : `Pay ₹${cart?.total?.toFixed(2) || '0.00'}`}
               </motion.button>

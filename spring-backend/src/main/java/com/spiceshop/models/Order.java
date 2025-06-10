@@ -21,28 +21,24 @@ import java.util.List;
 public class Order {
 
     public enum OrderStatus {
-        PENDING,       // Order placed but payment not confirmed
-        PROCESSING,    // Payment confirmed, preparing for shipment
-        SHIPPED,       // Order shipped to customer
-        DELIVERED,     // Order delivered to customer
-        CANCELLED,     // Order cancelled
-        REFUNDED       // Order refunded
+        PENDING,
+        PROCESSING,
+        SHIPPED,
+        DELIVERED,
+        CANCELLED,
+        REFUNDED
     }
 
     public enum PaymentStatus {
-        PENDING,       // Payment initiated but not completed
-        COMPLETED,     // Payment successfully processed
-        FAILED,        // Payment failed
-        REFUNDED,      // Payment refunded
+        PENDING,
+        COMPLETED,
+        FAILED,
+        REFUNDED,
         PARTIALLY_REFUNDED
     }
 
     public enum PaymentMethod {
-        CREDIT_CARD,
-        DEBIT_CARD,
-        PAYPAL,
-        UPI,
-        NET_BANKING,
+        RAZORPAY,
         COD
     }
 
@@ -62,6 +58,11 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
+
+    // Add a field for payments associated with this order
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Payment> payments = new ArrayList<>();
 
     @NotNull
     private BigDecimal subtotal;
@@ -84,7 +85,16 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
 
-    private String transactionId;  // Payment gateway transaction ID
+    // Remove transactionId from here if it's stored in Payment entity
+    // private String transactionId;
+
+    // Add Razorpay Order ID here if you want to store it directly on the order,
+    // although it's also on the Payment. Keep it consistent.
+    private String razorpayOrderId;
+
+    // Add order notes field
+    private String orderNotes;
+
 
     // Shipping address snapshot at time of order
     @NotBlank
@@ -130,6 +140,238 @@ public class Order {
                 .map(OrderItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // You might want to define `shippingCost` somewhere else (e.g., a service or configuration)
+        // For now, let's assume it's set before calling calculateTotals or has a default
+        if (this.shippingCost == null) {
+            this.shippingCost = BigDecimal.ZERO; // Default if not set
+        }
         this.total = subtotal.add(shippingCost);
+    }
+
+
+    // Getters and Setters (Lombok @Data annotation handles this, but explicitly shown for clarity if needed)
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
+
+    public List<Payment> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<Payment> payments) {
+        this.payments = payments;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public BigDecimal getShippingCost() {
+        return shippingCost;
+    }
+
+    public void setShippingCost(BigDecimal shippingCost) {
+        this.shippingCost = shippingCost;
+    }
+
+    public BigDecimal getTotal() {
+        return total;
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getRazorpayOrderId() {
+        return razorpayOrderId;
+    }
+
+    public void setRazorpayOrderId(String razorpayOrderId) {
+        this.razorpayOrderId = razorpayOrderId;
+    }
+
+    public String getShippingFirstName() {
+        return shippingFirstName;
+    }
+
+    public void setShippingFirstName(String shippingFirstName) {
+        this.shippingFirstName = shippingFirstName;
+    }
+
+    public String getShippingLastName() {
+        return shippingLastName;
+    }
+
+    public void setShippingLastName(String shippingLastName) {
+        this.shippingLastName = shippingLastName;
+    }
+
+    public String getShippingAddressLine1() {
+        return shippingAddressLine1;
+    }
+
+    public void setShippingAddressLine1(String shippingAddressLine1) {
+        this.shippingAddressLine1 = shippingAddressLine1;
+    }
+
+    public String getShippingAddressLine2() {
+        return shippingAddressLine2;
+    }
+
+    public void setShippingAddressLine2(String shippingAddressLine2) {
+        this.shippingAddressLine2 = shippingAddressLine2;
+    }
+
+    public String getShippingCity() {
+        return shippingCity;
+    }
+
+    public void setShippingCity(String shippingCity) {
+        this.shippingCity = shippingCity;
+    }
+
+    public String getShippingState() {
+        return shippingState;
+    }
+
+    public void setState(String shippingState) {
+        this.shippingState = shippingState;
+    }
+
+    public String getShippingPinCode() {
+        return shippingPinCode;
+    }
+
+    public void setShippingPinCode(String shippingPinCode) {
+        this.shippingPinCode = shippingPinCode;
+    }
+
+    public String getShippingPhone() {
+        return shippingPhone;
+    }
+
+    public void setShippingPhone(String shippingPhone) {
+        this.shippingPhone = shippingPhone;
+    }
+
+    public String getShippingNote() {
+        return shippingNote;
+    }
+
+    public void setShippingNote(String shippingNote) {
+        this.shippingNote = shippingNote;
+    }
+
+    public String getOrderNotes() {
+        return orderNotes;
+    }
+
+    public void setOrderNotes(String orderNotes) {
+        this.orderNotes = orderNotes;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(LocalDateTime paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+
+    public LocalDateTime getShippedDate() {
+        return shippedDate;
+    }
+
+    public void setShippedDate(LocalDateTime shippedDate) {
+        this.shippedDate = shippedDate;
+    }
+
+    public LocalDateTime getDeliveredDate() {
+        return deliveredDate;
+    }
+
+    public void setDeliveredDate(LocalDateTime deliveredDate) {
+        this.deliveredDate = deliveredDate;
+    }
+
+    public LocalDateTime getCancelledDate() {
+        return cancelledDate;
+    }
+
+    public void setCancelledDate(LocalDateTime cancelledDate) {
+        this.cancelledDate = cancelledDate;
     }
 }
