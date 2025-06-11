@@ -27,7 +27,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final CartRepository cartRepository;
-    private final SpicePackRepository spicePackRepository; // Inject SpicePackRepository
+    private final SpicePackRepository spicePackRepository;
 
     @Value("${razorpay.key_id}")
     private String razorpayKeyId;
