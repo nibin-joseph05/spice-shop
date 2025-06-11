@@ -7,7 +7,7 @@ import Footer from '@/components/home/Footer';
 import NavTabs from '@/components/profile/NavTabs';
 import ProfileForm from '@/components/profile/ProfileForm';
 import PasswordForm from '@/components/profile/PasswordForm';
-import OrdersList from '@/components/profile/OrdersList'; // Ensure this path is correct
+import OrdersList from '@/components/profile/OrdersList';
 
 export default function MyProfile() {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
@@ -18,11 +18,20 @@ export default function MyProfile() {
     email: ''
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [orders, setOrders] = useState([]); // State to hold fetched orders
-  const [ordersLoading, setOrdersLoading] = useState(false); // Loading state for orders
-  const [ordersError, setOrdersError] = useState(null); // Error state for orders
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  // Enhanced password validation function
+  const validatePassword = (password) => ({
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  });
 
   // Effect to check session and fetch user profile data
   useEffect(() => {
@@ -39,13 +48,13 @@ export default function MyProfile() {
           return;
         }
 
-        setUserLoggedIn(true); // User is logged in
+        setUserLoggedIn(true);
         const userResponse = await fetch(`${backendUrl}/api/users/me`, {
           credentials: 'include'
         });
 
         if (!userResponse.ok) throw new Error('Failed to fetch user');
-        const apiResponse = await userResponse.json(); // Assuming API response has { success, user }
+        const apiResponse = await userResponse.json();
         if (apiResponse.success && apiResponse.user) {
           setFormData({
             firstName: apiResponse.user.firstName,
@@ -62,28 +71,27 @@ export default function MyProfile() {
     };
 
     checkSessionAndFetchData();
-  }, [backendUrl]); // Dependency array includes backendUrl
+  }, [backendUrl]);
 
   // Effect to fetch orders when 'orders' tab is active or user logs in
   useEffect(() => {
     if (activeTab === 'orders' && userLoggedIn) {
       const fetchOrders = async () => {
         setOrdersLoading(true);
-        setOrdersError(null); // Clear previous errors
+        setOrdersError(null);
         try {
           const response = await fetch(`${backendUrl}/api/orders/history`, {
             credentials: 'include',
           });
 
           if (!response.ok) {
-            // Handle specific status codes if needed (e.g., 401 for unauthorized)
             const errorData = await response.json();
             throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
           }
 
-          const apiResponse = await response.json(); // Assuming ApiResponse structure: { success, message, data }
+          const apiResponse = await response.json();
           if (apiResponse.success) {
-            setOrders(apiResponse.data); // Set the fetched orders (which should be an array of OrderHistoryDto)
+            setOrders(apiResponse.data);
           } else {
             setOrdersError(apiResponse.message || "Failed to fetch orders.");
           }
@@ -97,11 +105,10 @@ export default function MyProfile() {
 
       fetchOrders();
     } else if (activeTab === 'orders' && !userLoggedIn) {
-        // If orders tab is active but user is not logged in, clear orders and show an error
-        setOrders([]);
-        setOrdersError("Please log in to view your order history.");
+      setOrders([]);
+      setOrdersError("Please log in to view your order history.");
     }
-  }, [activeTab, userLoggedIn, backendUrl]); // Re-run when activeTab or userLoggedIn changes
+  }, [activeTab, userLoggedIn, backendUrl]);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -115,16 +122,36 @@ export default function MyProfile() {
     const newErrors = {};
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!/^\S+@\S+\.\S+$/.test(formData.email)) newErrors.email = 'Invalid email address';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validatePasswordForm = () => {
     const newErrors = {};
-    if (!passwordData.currentPassword) newErrors.currentPassword = 'Current password is required';
-    if (passwordData.newPassword.length < 8) newErrors.newPassword = 'Password must be at least 8 characters';
-    if (passwordData.newPassword !== passwordData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+
+    // Check if current password is provided
+    if (!passwordData.currentPassword) {
+      newErrors.currentPassword = 'Current password is required';
+    }
+
+    // Validate new password against all requirements
+    const passwordValidations = validatePassword(passwordData.newPassword);
+    if (!Object.values(passwordValidations).every(Boolean)) {
+      newErrors.newPassword = 'Password must meet all requirements';
+    }
+
+    // Check if passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    // Check if new password is different from current (basic check)
+    if (passwordData.currentPassword && passwordData.newPassword &&
+        passwordData.currentPassword === passwordData.newPassword) {
+      newErrors.newPassword = 'New password must be different from current password';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -133,12 +160,17 @@ export default function MyProfile() {
     e.preventDefault();
     if (validateProfileForm()) {
       try {
+        const updateData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName
+        };
+
         const response = await fetch(`${backendUrl}/api/users/update`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(updateData),
           credentials: 'include'
         });
 
@@ -157,6 +189,10 @@ export default function MyProfile() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
+
+    // Clear previous errors
+    setErrors({});
+
     if (validatePasswordForm()) {
       try {
         const response = await fetch(`${backendUrl}/api/auth/change-password`, {
@@ -164,21 +200,23 @@ export default function MyProfile() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(passwordData),
+          body: JSON.stringify({
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword
+          }),
           credentials: 'include'
         });
 
         const data = await response.json();
         if (data.success) {
           alert("Password changed successfully!");
-          setPasswordData({ // Clear form on success
+          setPasswordData({
             currentPassword: '',
             newPassword: '',
             confirmPassword: ''
           });
-          setErrors({}); // Clear any password errors
+          setErrors({});
         } else {
-          // Set errors specifically for password fields
           setErrors({ api: data.message || "Failed to change password." });
         }
       } catch (error) {
@@ -200,26 +238,23 @@ export default function MyProfile() {
     );
   }
 
-  // If not logged in after initial check, redirect or show message
   if (!userLoggedIn) {
-      return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
-          <Header />
-          <main className="flex-grow flex items-center justify-center">
-            <p className="text-red-600 font-semibold text-lg">You must be logged in to view your profile.</p>
-            {/* Optionally add a login button here */}
-            <button
-              onClick={() => window.location.href = '/my-account'} // Assuming /my-account is your login/signup page
-              className="ml-4 px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
-            >
-              Login / Sign Up
-            </button>
-          </main>
-          <Footer />
-        </div>
-      );
-    }
-
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <p className="text-red-600 font-semibold text-lg">You must be logged in to view your profile.</p>
+          <button
+            onClick={() => window.location.href = '/my-account'}
+            className="ml-4 px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
+          >
+            Login / Sign Up
+          </button>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
@@ -250,6 +285,7 @@ export default function MyProfile() {
               {activeTab === 'password' && (
                 <PasswordForm
                   user={userLoggedIn}
+                  passwordData={passwordData}
                   setPasswordData={setPasswordData}
                   errors={errors}
                   onSubmit={handlePasswordSubmit}

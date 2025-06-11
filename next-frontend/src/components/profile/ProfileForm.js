@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiUser, FiEdit3, FiSave } from 'react-icons/fi';
+import { FiUser, FiEdit3, FiSave, FiLock } from 'react-icons/fi';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -91,17 +91,21 @@ export default function ProfileForm({ user, formData, setFormData, errors, onSub
         </motion.div>
 
         <motion.div variants={itemVariants} className="md:col-span-2 space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Email Address</label>
+          <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+            Email Address
+            <FiLock className="text-gray-400 text-sm" title="Email cannot be changed" />
+          </label>
           <input
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className={`w-full px-4 py-3 rounded-lg border ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            } focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
-            disabled={!isEditing}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-500 cursor-not-allowed"
+            disabled={true}
+            title="Email address cannot be changed"
           />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
+            <FiLock className="text-xs" />
+            Your email address cannot be changed for security reasons
+          </p>
         </motion.div>
 
         {isEditing && (

@@ -54,6 +54,54 @@ public class UserController {
         ));
     }
 
+    @PutMapping("/update")
+    public ResponseEntity<Map<String, Object>> updateUserProfile(@RequestBody Map<String, String> updateData, HttpSession session) {
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Not authenticated"));
+        }
+
+        Long userId = (Long) userIdObj;
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", "User not found"));
+        }
+
+        User user = userOpt.get();
+
+        // Validate required fields
+        String firstName = updateData.get("firstName");
+        String lastName = updateData.get("lastName");
+
+        if (firstName == null || firstName.trim().isEmpty()) {
+            return ResponseEntity.status(400).body(Map.of("success", false, "message", "First name is required"));
+        }
+
+        if (lastName == null || lastName.trim().isEmpty()) {
+            return ResponseEntity.status(400).body(Map.of("success", false, "message", "Last name is required"));
+        }
+
+        // Update only firstName and lastName - email is not changeable
+        user.setFirstName(firstName.trim());
+        user.setLastName(lastName.trim());
+
+        try {
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Profile updated successfully",
+                    "user", Map.of(
+                            "firstName", user.getFirstName(),
+                            "lastName", user.getLastName(),
+                            "email", user.getEmail()
+                    )
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Failed to update profile"));
+        }
+    }
+
+
     // Helper method to get userId from session safely
     private Long getUserIdFromSession(HttpSession session) {
         Object userIdObj = session.getAttribute("userId");

@@ -88,6 +88,111 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody Map<String, String> body,
+            HttpSession session
+    ) {
+        // Check if user is authenticated
+        Object userId = session.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).body(
+                    Map.of("success", false, "message", "Not authenticated")
+            );
+        }
+
+        // Get request parameters
+        String currentPassword = body.get("currentPassword");
+        String newPassword = body.get("newPassword");
+
+        // Validate input
+        if (currentPassword == null || currentPassword.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "Current password is required")
+            );
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "New password is required")
+            );
+        }
+
+        // Enhanced password validation
+        String passwordValidationError = validatePasswordStrength(newPassword);
+        if (passwordValidationError != null) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", passwordValidationError)
+            );
+        }
+
+        try {
+            // Find the user
+            Optional<User> userOpt = userRepository.findById((Long) userId);
+            if (userOpt.isEmpty()) {
+                // This shouldn't happen if session is valid, but handle it
+                session.invalidate();
+                return ResponseEntity.status(401).body(
+                        Map.of("success", false, "message", "User not found")
+                );
+            }
+
+            User user = userOpt.get();
+
+            // Verify current password
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                return ResponseEntity.status(401).body(
+                        Map.of("success", false, "message", "Current password is incorrect")
+                );
+            }
+
+            // Check if new password is different from current password
+            if (passwordEncoder.matches(newPassword, user.getPassword())) {
+                return ResponseEntity.badRequest().body(
+                        Map.of("success", false, "message", "New password must be different from current password")
+                );
+            }
+
+            // Update password
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+
+            return ResponseEntity.ok(
+                    Map.of("success", true, "message", "Password changed successfully")
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("success", false, "message", "An error occurred while changing password")
+            );
+        }
+    }
+
+    private String validatePasswordStrength(String password) {
+        if (password.length() < 8) {
+            return "Password must be at least 8 characters long";
+        }
+
+        if (!password.matches(".*[A-Z].*")) {
+            return "Password must contain at least one uppercase letter";
+        }
+
+        if (!password.matches(".*[a-z].*")) {
+            return "Password must contain at least one lowercase letter";
+        }
+
+        if (!password.matches(".*\\d.*")) {
+            return "Password must contain at least one number";
+        }
+
+        if (!password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
+            return "Password must contain at least one special character";
+        }
+
+        return null;
+    }
+
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, String> body) {
         String email = body.get("email");
