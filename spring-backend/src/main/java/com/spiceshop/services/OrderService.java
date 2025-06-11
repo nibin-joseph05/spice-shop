@@ -2,8 +2,7 @@ package com.spiceshop.services;
 
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
-import com.spiceshop.dto.OrderRequest;
-import com.spiceshop.dto.OrderResponse;
+import com.spiceshop.dto.*;
 import com.spiceshop.exceptions.CustomException;
 import com.spiceshop.models.*;
 import com.spiceshop.repositorys.*;
@@ -188,5 +187,133 @@ public class OrderService {
                 .message("Order placed successfully. Proceeding to payment.")
                 .success(true)
                 .build();
+    }
+
+    public List<OrderHistoryDto> getUserOrderHistory(User currentUser) {
+        if (currentUser == null) {
+            throw new CustomException("User not authenticated.");
+        }
+        // Fetch orders by user, ordered by most recent first
+        List<Order> orders = orderRepository.findByUserOrderByCreatedAtDesc(currentUser);
+
+        return orders.stream()
+                .map(this::mapToOrderHistoryDto) // Map each Order entity to OrderHistoryDto
+                .collect(Collectors.toList());
+    }
+
+    // New private method to map Order entity to OrderHistoryDto
+    private OrderHistoryDto mapToOrderHistoryDto(Order order) {
+        List<OrderHistoryItemDto> itemDtos = order.getItems().stream()
+                .map(orderItem -> {
+                    String imageUrl = null;
+                    if (orderItem.getSpicePack() != null &&
+                            orderItem.getSpicePack().getVariant() != null &&
+                            orderItem.getSpicePack().getVariant().getSpice() != null &&
+                            orderItem.getSpicePack().getVariant().getSpice().getImages() != null &&
+                            !orderItem.getSpicePack().getVariant().getSpice().getImages().isEmpty()) {
+                        // Get the first image URL associated with the spice
+                        imageUrl = orderItem.getSpicePack().getVariant().getSpice().getImages().get(0).getImageUrl();
+                    }
+
+                    return OrderHistoryItemDto.builder()
+                            .orderItemId(orderItem.getId())
+                            .spiceName(orderItem.getSpiceName())
+                            .qualityClass(orderItem.getQualityClass())
+                            .packWeightInGrams(orderItem.getPackWeightInGrams())
+                            .unitPrice(orderItem.getUnitPrice())
+                            .quantity(orderItem.getQuantity())
+                            .imageUrl(imageUrl) // Set the fetched image URL
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return OrderHistoryDto.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .orderDate(order.getCreatedAt())
+                .subtotal(order.getSubtotal())
+                .shippingCost(order.getShippingCost())
+                .totalAmount(order.getTotal())
+                .orderStatus(order.getOrderStatus())
+                .paymentStatus(order.getPaymentStatus())
+                .paymentMethod(order.getPaymentMethod().name()) // Convert enum to string
+                // Map shipping address details
+                .shippingFirstName(order.getShippingFirstName())
+                .shippingLastName(order.getShippingLastName())
+                .shippingAddressLine1(order.getShippingAddressLine1())
+                .shippingAddressLine2(order.getShippingAddressLine2())
+                .shippingCity(order.getShippingCity())
+                .shippingState(order.getShippingState())
+                .shippingPinCode(order.getShippingPinCode())
+                .shippingPhone(order.getShippingPhone())
+                .orderNotes(order.getShippingNote()) // Assuming orderNotes maps to shippingNote
+
+                .items(itemDtos) // Attach the list of detailed items
+                .build();
+    }
+
+    public OrderDetailsDto getOrderDetailByIdAndUser(Long orderId, User user) {
+        logger.info("OrderService: Fetching order details for orderId: {} and user: {}", orderId, user.getEmail());
+        Order order = orderRepository.findByIdAndUser(orderId, user)
+                .orElseThrow(() -> new CustomException("Order not found or you don't have permission to view it"));
+
+        return mapOrderToOrderDetailsDto(order);
+    }
+
+    private OrderDetailsDto mapOrderToOrderDetailsDto(Order order) {
+
+        String fullAddress = order.getShippingFirstName() + " " + order.getShippingLastName();
+        String addressLine1 = fullAddress + ", " + order.getShippingAddressLine1();
+
+        OrderDetailsDto.ShippingAddressDto shippingAddressDto =
+                new OrderDetailsDto.ShippingAddressDto(
+                        addressLine1,
+                        order.getShippingAddressLine2() != null ? order.getShippingAddressLine2() : "",
+                        order.getShippingCity(),
+                        order.getShippingState(),
+                        order.getShippingPinCode(),
+                        "India",
+                        order.getShippingPhone()
+                );
+
+        // Map order items
+        List<OrderDetailsDto.OrderItemDetailsDto> itemDtos = order.getItems().stream()
+                .map(this::mapOrderItemToOrderItemDetailsDto)
+                .collect(Collectors.toList());
+
+        return new OrderDetailsDto(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getCreatedAt(),
+                order.getTotal(),
+                order.getOrderStatus().name(),
+                order.getPaymentStatus().name(),
+                order.getPaymentMethod().name(),
+                shippingAddressDto,
+                itemDtos
+        );
+    }
+
+    private OrderDetailsDto.OrderItemDetailsDto mapOrderItemToOrderItemDetailsDto(OrderItem orderItem) {
+        String imageUrl = null;
+        SpicePack spicePack = orderItem.getSpicePack();
+        if (spicePack != null) {
+            SpiceVariant spiceVariant = spicePack.getVariant(); // Changed from Variant to SpiceVariant
+            if (spiceVariant != null) {
+                Spice spice = spiceVariant.getSpice();
+                if (spice != null && spice.getImages() != null && !spice.getImages().isEmpty()) {
+                    imageUrl = spice.getImages().get(0).getImageUrl();
+                }
+            }
+        }
+
+        return new OrderDetailsDto.OrderItemDetailsDto(
+                orderItem.getSpiceName(),
+                orderItem.getQuantity(),
+                orderItem.getUnitPrice(),
+                orderItem.getPackWeightInGrams(),
+                orderItem.getQualityClass(),
+                imageUrl
+        );
     }
 }

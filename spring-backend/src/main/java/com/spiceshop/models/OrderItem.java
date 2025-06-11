@@ -48,7 +48,7 @@ public class OrderItem {
         return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 
-    // Getters and Setters (Lombok @Data annotation handles this, but explicitly shown for clarity if needed)
+
     public Long getId() {
         return id;
     }

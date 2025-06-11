@@ -85,18 +85,12 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
 
-    // Remove transactionId from here if it's stored in Payment entity
-    // private String transactionId;
-
-    // Add Razorpay Order ID here if you want to store it directly on the order,
-    // although it's also on the Payment. Keep it consistent.
     private String razorpayOrderId;
 
     // Add order notes field
     private String orderNotes;
 
 
-    // Shipping address snapshot at time of order
     @NotBlank
     private String shippingFirstName;
 

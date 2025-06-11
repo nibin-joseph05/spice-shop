@@ -1,9 +1,7 @@
 package com.spiceshop.controllers;
 
 import com.razorpay.RazorpayException;
-import com.spiceshop.dto.OrderRequest;
-import com.spiceshop.dto.ApiResponse;
-import com.spiceshop.dto.OrderResponse;
+import com.spiceshop.dto.*;
 import com.spiceshop.exceptions.CustomException;
 import com.spiceshop.models.User;
 import com.spiceshop.repositorys.UserRepository;
@@ -15,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+
+import java.util.List;
 
 
 @RestController
@@ -68,6 +68,61 @@ public class OrderController {
         } catch (Exception e) {
             logger.error("OrderController: Unexpected error during placeOrder: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while placing the order."));
+        }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<OrderHistoryDto>>> getUserOrders(HttpSession session) {
+        User currentUser = null;
+        Object userId = session.getAttribute("userId");
+
+        if (userId != null) {
+            currentUser = userRepository.findById((Long) userId)
+                    .orElse(null);
+            if (currentUser == null) {
+                session.invalidate();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User session invalid. Please log in again."));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User not authenticated. Please log in."));
+        }
+
+        try {
+            List<OrderHistoryDto> orders = orderService.getUserOrderHistory(currentUser);
+            return ResponseEntity.ok(ApiResponse.success("User order history fetched successfully.", orders));
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("OrderController: Unexpected error fetching order history: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching order history."));
+        }
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<ApiResponse<OrderDetailsDto>> getOrderDetails(@PathVariable Long orderId, HttpSession session) {
+        User currentUser = null;
+        Object userId = session.getAttribute("userId");
+
+        if (userId != null) {
+            currentUser = userRepository.findById((Long) userId)
+                    .orElse(null);
+            if (currentUser == null) {
+                session.invalidate();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User session invalid. Please log in again."));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User not authenticated. Please log in."));
+        }
+
+        try {
+            OrderDetailsDto orderDetails = orderService.getOrderDetailByIdAndUser(orderId, currentUser);
+            return ResponseEntity.ok(ApiResponse.success("Order details fetched successfully.", orderDetails));
+        } catch (CustomException e) {
+            logger.error("OrderController: CustomException fetching order details: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("OrderController: Unexpected error fetching order details: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching order details."));
         }
     }
 }

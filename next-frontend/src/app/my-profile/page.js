@@ -7,62 +7,101 @@ import Footer from '@/components/home/Footer';
 import NavTabs from '@/components/profile/NavTabs';
 import ProfileForm from '@/components/profile/ProfileForm';
 import PasswordForm from '@/components/profile/PasswordForm';
-import OrdersList from '@/components/profile/OrdersList';
+import OrdersList from '@/components/profile/OrdersList'; // Ensure this path is correct
 
 export default function MyProfile() {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
-      firstName: '',
-      lastName: '',
-      email: ''
-    });
+    firstName: '',
+    lastName: '',
+    email: ''
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [orders, setOrders] = useState([]); // State to hold fetched orders
+  const [ordersLoading, setOrdersLoading] = useState(false); // Loading state for orders
+  const [ordersError, setOrdersError] = useState(null); // Error state for orders
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+  // Effect to check session and fetch user profile data
   useEffect(() => {
-      const checkSessionAndFetchData = async () => {
-        setIsLoading(true);
-        try {
-          // First check session validity
-          const sessionResponse = await fetch(`${backendUrl}/api/auth/check-session`, {
-            credentials: 'include'
-          });
+    const checkSessionAndFetchData = async () => {
+      setIsLoading(true);
+      try {
+        const sessionResponse = await fetch(`${backendUrl}/api/auth/check-session`, {
+          credentials: 'include'
+        });
 
-          if (!sessionResponse.ok) {
-            setUserLoggedIn(false);
-            setIsLoading(false);
-            return;
-          }
-
-          // If session valid, fetch user data
-          setUserLoggedIn(true);
-          const userResponse = await fetch(`${backendUrl}/api/users/me`, {
-            credentials: 'include'
-          });
-
-          if (!userResponse.ok) throw new Error('Failed to fetch user');
-          const { success, user } = await userResponse.json();
-
-          if (success) {
-            setFormData({
-              firstName: user.firstName,
-              lastName: user.lastName,
-              email: user.email
-            });
-          }
-        } catch (error) {
-          console.error('Error:', error);
+        if (!sessionResponse.ok) {
           setUserLoggedIn(false);
-        } finally {
           setIsLoading(false);
+          return;
+        }
+
+        setUserLoggedIn(true); // User is logged in
+        const userResponse = await fetch(`${backendUrl}/api/users/me`, {
+          credentials: 'include'
+        });
+
+        if (!userResponse.ok) throw new Error('Failed to fetch user');
+        const apiResponse = await userResponse.json(); // Assuming API response has { success, user }
+        if (apiResponse.success && apiResponse.user) {
+          setFormData({
+            firstName: apiResponse.user.firstName,
+            lastName: apiResponse.user.lastName,
+            email: apiResponse.user.email
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        setUserLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSessionAndFetchData();
+  }, [backendUrl]); // Dependency array includes backendUrl
+
+  // Effect to fetch orders when 'orders' tab is active or user logs in
+  useEffect(() => {
+    if (activeTab === 'orders' && userLoggedIn) {
+      const fetchOrders = async () => {
+        setOrdersLoading(true);
+        setOrdersError(null); // Clear previous errors
+        try {
+          const response = await fetch(`${backendUrl}/api/orders/history`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            // Handle specific status codes if needed (e.g., 401 for unauthorized)
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+          }
+
+          const apiResponse = await response.json(); // Assuming ApiResponse structure: { success, message, data }
+          if (apiResponse.success) {
+            setOrders(apiResponse.data); // Set the fetched orders (which should be an array of OrderHistoryDto)
+          } else {
+            setOrdersError(apiResponse.message || "Failed to fetch orders.");
+          }
+        } catch (e) {
+          console.error('Error fetching orders:', e);
+          setOrdersError(e.message || "An unexpected error occurred while fetching orders.");
+        } finally {
+          setOrdersLoading(false);
         }
       };
 
-      checkSessionAndFetchData();
-    }, []);
-
+      fetchOrders();
+    } else if (activeTab === 'orders' && !userLoggedIn) {
+        // If orders tab is active but user is not logged in, clear orders and show an error
+        setOrders([]);
+        setOrdersError("Please log in to view your order history.");
+    }
+  }, [activeTab, userLoggedIn, backendUrl]); // Re-run when activeTab or userLoggedIn changes
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -90,39 +129,97 @@ export default function MyProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleProfileSubmit = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
     if (validateProfileForm()) {
-      console.log('Profile data:', formData);
-      // API call
+      try {
+        const response = await fetch(`${backendUrl}/api/users/update`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert("Profile updated successfully!");
+        } else {
+          alert("Error updating profile: " + data.message);
+        }
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        alert("An error occurred while updating profile.");
+      }
     }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (validatePasswordForm()) {
-      console.log('Password data:', passwordData);
-      // API call
+      try {
+        const response = await fetch(`${backendUrl}/api/auth/change-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(passwordData),
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert("Password changed successfully!");
+          setPasswordData({ // Clear form on success
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          });
+          setErrors({}); // Clear any password errors
+        } else {
+          // Set errors specifically for password fields
+          setErrors({ api: data.message || "Failed to change password." });
+        }
+      } catch (error) {
+        console.error("Error changing password:", error);
+        setErrors({ api: "An error occurred while changing password." });
+      }
     }
   };
 
-  const orders = [
-    { id: 1, items: 'Cardamom (Class 1), Black Pepper', date: '2024-03-15', amount: '₹640', status: 'Delivered' },
-    { id: 2, items: 'Turmeric Powder, Red Chilli', date: '2024-02-28', amount: '₹320', status: 'Processing' }
-  ];
-
-
   if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <p>Loading profile data...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If not logged in after initial check, redirect or show message
+  if (!userLoggedIn) {
       return (
         <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
           <Header />
           <main className="flex-grow flex items-center justify-center">
-            <p>Loading profile...</p>
+            <p className="text-red-600 font-semibold text-lg">You must be logged in to view your profile.</p>
+            {/* Optionally add a login button here */}
+            <button
+              onClick={() => window.location.href = '/my-account'} // Assuming /my-account is your login/signup page
+              className="ml-4 px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
+            >
+              Login / Sign Up
+            </button>
           </main>
           <Footer />
         </div>
       );
     }
+
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
@@ -153,14 +250,23 @@ export default function MyProfile() {
               {activeTab === 'password' && (
                 <PasswordForm
                   user={userLoggedIn}
-                  passwordData={passwordData}
                   setPasswordData={setPasswordData}
                   errors={errors}
                   onSubmit={handlePasswordSubmit}
                 />
               )}
 
-              {activeTab === 'orders' && <OrdersList orders={orders} />}
+              {activeTab === 'orders' && (
+                <>
+                  {ordersLoading ? (
+                    <div className="text-center text-gray-600">Loading orders...</div>
+                  ) : ordersError ? (
+                    <div className="text-center text-red-600">{ordersError}</div>
+                  ) : (
+                    <OrdersList orders={orders} />
+                  )}
+                </>
+              )}
             </motion.div>
           </div>
         </section>
