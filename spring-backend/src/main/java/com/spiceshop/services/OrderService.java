@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+
 @Service
 public class OrderService {
 
@@ -34,18 +35,22 @@ public class OrderService {
     @Value("${razorpay.key_secret}")
     private String razorpayKeySecret;
 
+    private final EmailService emailService;
+
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
 
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository,
                         PaymentRepository paymentRepository, UserRepository userRepository,
-                        CartRepository cartRepository, SpicePackRepository spicePackRepository) {
+                        CartRepository cartRepository, SpicePackRepository spicePackRepository, EmailService emailService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
         this.spicePackRepository = spicePackRepository;
+
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -162,18 +167,22 @@ public class OrderService {
             }
         }
 
-        orderRepository.save(order); // Save the order with its determined initial status
+        orderRepository.save(order);
+
+        if (order.getPaymentMethod() == Order.PaymentMethod.COD) {
+            emailService.sendOrderConfirmationEmail(order);
+        }
 
         Payment payment = Payment.builder()
                 .order(order)
                 .paymentMethod(order.getPaymentMethod())
                 .amount(order.getTotal())
-                .status(order.getPaymentStatus()) // Will be PENDING for both COD & RAZORPAY at this stage
-                .paymentDate(LocalDateTime.now()) // Set current time, will be updated on completion/failure
-                .gatewayOrderId(razorpayOrderId) // Will be null for COD
+                .status(order.getPaymentStatus())
+                .paymentDate(LocalDateTime.now())
+                .gatewayOrderId(razorpayOrderId)
                 .build();
         paymentRepository.save(payment);
-        order.getPayments().add(payment); // Ensure the payment is linked to the order entity
+        order.getPayments().add(payment); 
 
         // Re-save order after linking payment
         orderRepository.save(order);
