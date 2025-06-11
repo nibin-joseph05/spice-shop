@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { FiLock, FiUser, FiCheckCircle, FiXCircle, FiInfo } from 'react-icons/fi'; // Added FiInfo for consistent icon usage
+import { FiLock, FiUser, FiCheckCircle, FiXCircle, FiInfo } from 'react-icons/fi';
 
 export default function CompleteRegistration({ onSubmit, loading, error: propError }) { // Renamed error prop to propError to avoid conflict
   const [formData, setFormData] = useState({

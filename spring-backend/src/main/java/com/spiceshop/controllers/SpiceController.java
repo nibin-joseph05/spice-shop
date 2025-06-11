@@ -1,4 +1,4 @@
-// com.spiceshop.controllers.SpiceController.java
+  
 package com.spiceshop.controllers;
 
 import com.spiceshop.dto.*;
@@ -36,13 +36,13 @@ public class SpiceController {
             entity.setOrigin(req.getOrigin());
             entity.setAvailable(req.getIsAvailable());
 
-            // Map variants
+              
             if (req.getVariants() != null) {
                 req.getVariants().forEach(vr -> {
                     SpiceVariant sv = new SpiceVariant();
                     sv.setQualityClass(vr.getQualityClass());
 
-                    // Map packs
+                      
                     if (vr.getPacks() != null) {
                         vr.getPacks().forEach(pr -> {
                             SpicePack pack = new SpicePack();
@@ -57,7 +57,7 @@ public class SpiceController {
                 });
             }
 
-            // Map images
+              
             if (req.getImageUrls() != null) {
                 req.getImageUrls().forEach(url -> {
                     SpiceImage si = new SpiceImage();
@@ -100,7 +100,7 @@ public class SpiceController {
         }
     }
 
-    // PATCH endpoint for availability
+      
     @PatchMapping("/spices/{id}/availability")
     public ResponseEntity<SpiceDto> updateAvailability(
             @PathVariable Long id,
@@ -145,7 +145,7 @@ public class SpiceController {
     public ResponseEntity<?> deleteSpice(@PathVariable Long id) {
         try {
             spiceService.deleteSpice(id);
-            return ResponseEntity.noContent().build(); // 204 No Content
+            return ResponseEntity.noContent().build();   
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Spice not found with id: " + id));
@@ -161,12 +161,12 @@ public class SpiceController {
         try {
             Spice existingSpice = spiceService.getSpiceById(id);
 
-            // Update basic fields
+              
             existingSpice.setName(req.getName());
             existingSpice.setDescription(req.getDescription());
             existingSpice.setOrigin(req.getOrigin());
 
-            // Handle variants
+              
             existingSpice.getVariants().clear();
             if (req.getVariants() != null) {
                 req.getVariants().forEach(vr -> {
@@ -186,7 +186,7 @@ public class SpiceController {
                 });
             }
 
-            // Handle images
+              
             existingSpice.getImages().clear();
             if (req.getImageUrls() != null) {
                 req.getImageUrls().forEach(url -> {
@@ -210,7 +210,7 @@ public class SpiceController {
         }
     }
 
-    // Get distinct quality classes from variants
+      
     @GetMapping("/quality-classes")
     public ResponseEntity<List<String>> getUniqueQualityClasses() {
         List<String> qualityClasses = spiceService.getUniqueQualityClasses();

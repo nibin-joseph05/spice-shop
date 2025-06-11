@@ -41,7 +41,7 @@ export default function SpiceDetailsPage({ params: paramsPromise }) {
           const errorData = await response.json().catch(() => ({ message: 'Deletion failed on the server.' }));
           throw new Error(errorData.message || 'Deletion failed on the server.');
         }
-        router.push('/admin/spice-list'); // Redirect to spice list on successful delete
+        router.push('/admin/spice-list');
       } catch (err) {
         setError(`Deletion failed: ${err.message}`);
       }
@@ -50,7 +50,7 @@ export default function SpiceDetailsPage({ params: paramsPromise }) {
 
   const toggleAvailability = async () => {
     const originalStatus = spice.isAvailable;
-    // Optimistic update
+
     setSpice({ ...spice, isAvailable: !originalStatus });
 
     try {
@@ -66,14 +66,14 @@ export default function SpiceDetailsPage({ params: paramsPromise }) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update availability on the server.' }));
         throw new Error(errorData.message || 'Failed to update availability on the server.');
       }
-      // If successful, state is already updated.
+
     } catch (err) {
       setError(`Availability update failed: ${err.message}`);
-      setSpice({ ...spice, isAvailable: originalStatus }); // Rollback on error
+      setSpice({ ...spice, isAvailable: originalStatus });
     }
   };
 
-  // --- Skeleton Loader ---
+
   if (loading) {
     return (
       <div className="flex min-h-screen">
@@ -143,7 +143,7 @@ export default function SpiceDetailsPage({ params: paramsPromise }) {
     );
   }
 
-  // --- Error State ---
+
   if (error) {
     return (
       <div className="flex min-h-screen">

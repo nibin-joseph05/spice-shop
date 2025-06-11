@@ -1,8 +1,8 @@
-// app/admin/spices/page.js
+
 "use client";
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/admin/Sidebar";
-import { FiInfo, FiTrash2, FiAlertTriangle, FiPlus, FiImage, FiChevronLeft, FiChevronRight, FiSearch, FiX } from "react-icons/fi"; // Added pagination icons and filter icons
+import { FiInfo, FiTrash2, FiAlertTriangle, FiPlus, FiImage, FiChevronLeft, FiChevronRight, FiSearch, FiX } from "react-icons/fi";
 
 export default function SpiceListPage() {
   const [darkMode] = useState(true);
@@ -11,13 +11,13 @@ export default function SpiceListPage() {
   const [pageError, setPageError] = useState(null);
   const [operationError, setOperationError] = useState(null);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [spicesPerPage] = useState(5); // Set 5 spices per page
 
-  // Filter states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [spicesPerPage] = useState(5);
+
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState('all'); // 'all', 'available', 'unavailable'
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [minStock, setMinStock] = useState('');
 
   useEffect(() => {
@@ -89,9 +89,9 @@ export default function SpiceListPage() {
     }
   };
 
-  // --- Filtering Logic ---
+
   const filteredSpices = spices.filter(spice => {
-    // Search Term Filter
+
     const matchesSearch = spice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           spice.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           spice.variants?.some(variant =>
@@ -99,12 +99,12 @@ export default function SpiceListPage() {
                             variant.packs?.some(pack => pack.packWeightInGrams.toString().includes(searchTerm))
                           );
 
-    // Availability Filter
+
     const matchesAvailability = availabilityFilter === 'all' ||
                                 (availabilityFilter === 'available' && spice.isAvailable) ||
                                 (availabilityFilter === 'unavailable' && !spice.isAvailable);
 
-    // Minimum Stock Filter
+
     const matchesMinStock = minStock === '' ||
                             spice.variants?.some(variant =>
                               variant.packs?.some(pack => pack.stockQuantity >= parseInt(minStock))
@@ -117,15 +117,15 @@ export default function SpiceListPage() {
     setSearchTerm('');
     setAvailabilityFilter('all');
     setMinStock('');
-    setCurrentPage(1); // Reset to first page after clearing filters
+    setCurrentPage(1);
   };
 
-  // --- Pagination Logic (applied to filteredSpices) ---
+
   const indexOfLastSpice = currentPage * spicesPerPage;
   const indexOfFirstSpice = indexOfLastSpice - spicesPerPage;
-  const currentSpices = filteredSpices.slice(indexOfFirstSpice, indexOfLastSpice); // Apply slice to filteredSpices
+  const currentSpices = filteredSpices.slice(indexOfFirstSpice, indexOfLastSpice);
 
-  const totalPages = Math.ceil(filteredSpices.length / spicesPerPage); // Base totalPages on filteredSpices.length
+  const totalPages = Math.ceil(filteredSpices.length / spicesPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -141,7 +141,7 @@ export default function SpiceListPage() {
     }
   };
 
-  // --- Skeleton Loader ---
+
   if (loading) {
     return (
       <div className="flex min-h-screen">

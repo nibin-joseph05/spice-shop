@@ -1,4 +1,4 @@
-// app/admin/add-spice/page.js
+
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -204,7 +204,7 @@ export default function AddSpicePage() {
               let backendErrors = {};
               let generalErrorMessage = "Failed to add spice. Please check your inputs.";
 
-              // Handle duplicate name error
+
               if (response.status === 409 && data.existingId) {
                 generalErrorMessage = `Spice '${formData.name}' already exists. `;
                 generalErrorMessage += "Would you like to edit the existing entry instead?";
@@ -216,7 +216,7 @@ export default function AddSpicePage() {
                 return;
               }
 
-              // Validation-error or other message
+
               if (data.errors && Array.isArray(data.errors)) {
                 data.errors.forEach(err => {
                   backendErrors[err.field] = err.message;

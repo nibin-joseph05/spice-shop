@@ -53,7 +53,7 @@ export default function Shop() {
   const [availableQualityClasses, setAvailableQualityClasses] = useState([]);
 
 
-  // Fetch filter options on component mount
+
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {

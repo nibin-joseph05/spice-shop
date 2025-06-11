@@ -1,4 +1,4 @@
-// app/admin/edit-spice/[id]/page.js
+
 "use client";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ export default function EditSpicePage({ params: paramsPromise }) {
   const [existingSpiceId, setExistingSpiceId] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Prevent accidental navigation
+
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) {
@@ -38,7 +38,7 @@ export default function EditSpicePage({ params: paramsPromise }) {
   useEffect(() => {
     const fetchSpice = async () => {
       try {
-        // Use params.id directly
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices/${params.id}`);
         if (!response.ok) throw new Error('Failed to fetch spice');
         const data = await response.json();
@@ -76,9 +76,9 @@ export default function EditSpicePage({ params: paramsPromise }) {
       }
     };
 
-    // Add params.id to the dependency array
+
     fetchSpice();
-  }, [params.id]); // Changed back to params.id
+  }, [params.id]);
 
 
   const isValidUrl = (string) => {
@@ -267,7 +267,7 @@ export default function EditSpicePage({ params: paramsPromise }) {
       };
 
       const response = await fetch(
-        // Use params.id directly
+
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/spices/${params.id}`,
         {
           method: "PUT",

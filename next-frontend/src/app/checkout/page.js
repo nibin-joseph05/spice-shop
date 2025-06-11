@@ -9,7 +9,7 @@ import { CreditCardIcon, TruckIcon, MapPinIcon, PlusCircleIcon, PencilSquareIcon
 import { ShoppingBagIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 
-// Dummy data for states - replace with actual data or fetch from an API if needed
+
 const indianStates = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
   "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
@@ -45,11 +45,11 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [userSessionData, setUserSessionData] = useState(null); // Store user session data
+  const [userSessionData, setUserSessionData] = useState(null);
 
   const router = useRouter();
 
-  // Helper to display transient messages
+
   const showMessage = (msg, isSuccess = false) => {
     setFormMessage(msg);
     setTimeout(() => setFormMessage(''), 5000);
@@ -107,30 +107,30 @@ export default function CheckoutPage() {
             setIsEditingAddress(false);
           }
         } else {
-          // No addresses found or success: false, but response.ok is true (e.g., 200 OK with empty addresses array)
+
           setSavedAddresses([]);
           setSelectedAddressId(null);
           resetFormDataForNewAddress();
           setIsEditingAddress(false);
-          // Optionally, log a message here if it's unexpected for no addresses to be found
-          // console.warn('User has no saved addresses.');
+
+
         }
       } else {
-          // Handle non-OK responses (e.g., 401, 403, 500)
+
           let errorMessage = 'Failed to fetch user addresses. Please try again.';
           try {
             const errorData = await response.json();
             if (errorData && errorData.message) {
               errorMessage = errorData.message;
             }
-            console.error('Failed to fetch user addresses:', errorData); // Log detailed error
+            console.error('Failed to fetch user addresses:', errorData);
           } catch (jsonError) {
-            // This catch block handles cases where response.json() fails (e.g., empty body or invalid JSON)
+
             console.error('Failed to parse error response:', response.status, response.statusText);
             errorMessage = `Failed to fetch user addresses. Server responded with status: ${response.status} ${response.statusText || ''}.`;
           }
-          // You might want to set a more prominent error state for the user here
-          // setError(errorMessage); // If you have a global error state to display to the user
+
+
           console.error('Error fetching user addresses (non-OK response):', errorMessage);
           setSavedAddresses([]);
           setSelectedAddressId(null);
@@ -138,15 +138,15 @@ export default function CheckoutPage() {
           setIsEditingAddress(false);
         }
     } catch (err) {
-      // This catch block handles network errors or other unexpected issues with fetch
+
       console.error('Network or unexpected error fetching user addresses:', err);
-      // setError('An unexpected error occurred while fetching addresses.'); // Display to user
+
       setSavedAddresses([]);
       setSelectedAddressId(null);
       resetFormDataForNewAddress();
       setIsEditingAddress(false);
     }
-  }, [selectedAddressId, isUserLoggedIn, userSessionData]); // Added dependencies
+  }, [selectedAddressId, isUserLoggedIn, userSessionData]);
 
   const checkUserSession = async () => {
     try {
@@ -157,9 +157,9 @@ export default function CheckoutPage() {
       if (response.ok) {
         const data = await response.json();
         setIsUserLoggedIn(true);
-        setUserSessionData(data); // Store the user session data
+        setUserSessionData(data);
 
-        // Update form data with user information
+
         setFormData(prev => ({
           ...prev,
           email: data.email || prev.email,
@@ -173,7 +173,7 @@ export default function CheckoutPage() {
         setUserSessionData(null);
         setSavedAddresses([]);
         setSelectedAddressId(null);
-        // Don't reset form data here if user is guest
+
         setIsEditingAddress(false);
       }
     } catch (err) {
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
   const resetFormDataForNewAddress = () => {
     setFormData(prev => ({
       ...prev,
-      // Keep user info if logged in, otherwise keep current values
+
       email: isUserLoggedIn && userSessionData ? userSessionData.email : prev.email,
       firstName: isUserLoggedIn && userSessionData ? userSessionData.firstName : prev.firstName,
       lastName: isUserLoggedIn && userSessionData ? userSessionData.lastName : prev.lastName,
@@ -207,7 +207,7 @@ export default function CheckoutPage() {
   const setFormDataFromAddress = (address) => {
     setFormData(prev => ({
       ...prev,
-      // Always preserve user session data for email, firstName, lastName
+
       email: isUserLoggedIn && userSessionData ? userSessionData.email : prev.email,
       firstName: address.firstName,
       lastName: address.lastName,
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
     checkUserSession();
   }, []);
 
-  // Recalculate totals
+
   const recalculateTotals = (currentCart) => {
     if (!currentCart || !currentCart.items) return;
     const subtotal = currentCart.items.reduce(

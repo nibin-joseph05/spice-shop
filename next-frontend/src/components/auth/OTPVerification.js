@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { FiLock, FiArrowRight, FiMail, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'; // Added FiAlertCircle and FiCheckCircle for consistent error/success messages
+import { FiLock, FiArrowRight, FiMail, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 
 export default function OTPVerification({
   email,

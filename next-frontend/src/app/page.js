@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { debounce } from 'lodash';
 import Link from 'next/link';
 
-// Animation variants
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -48,7 +48,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [featuredSpices, setFeaturedSpices] = useState([]); // State for featured spices
+  const [featuredSpices, setFeaturedSpices] = useState([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -70,8 +70,8 @@ export default function Home() {
 
         const data = await response.json();
         setSpices(data);
-        // Select a limited number of spices to feature on the homepage
-        // For example, display the first 6 or fewer if not enough are available
+
+
         setFeaturedSpices(data.slice(0, 6));
       } catch (err) {
         if (err.name !== 'AbortError') {
@@ -89,7 +89,7 @@ export default function Home() {
     };
   }, []);
 
-  // Removed debouncedSearch and filteredSpices as they are not needed for featured display
+
 
   if (!isClient) return null;
 
@@ -115,7 +115,7 @@ export default function Home() {
         <main className="flex-grow flex items-center justify-center">
           <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg max-w-lg mx-auto">
             <div className="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
@@ -169,7 +169,7 @@ export default function Home() {
               viewport={{ once: true, amount: 0.2 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {featuredSpices.map((spice, index) => ( // Use featuredSpices here
+              {featuredSpices.map((spice, index) => (
                 <motion.div
                   key={spice.id}
                   variants={itemVariants}

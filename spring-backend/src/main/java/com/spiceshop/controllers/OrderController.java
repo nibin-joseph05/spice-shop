@@ -34,25 +34,25 @@ public class OrderController {
 
     @PostMapping("/place")
     public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(@RequestBody OrderRequest orderRequest,
-                                                                 HttpSession session) { // Change parameter to HttpSession
+                                                                 HttpSession session) {   
 
         User currentUser = null;
-        Object userId = session.getAttribute("userId"); // Manually get userId from session
+        Object userId = session.getAttribute("userId");   
 
         if (userId != null) {
-            currentUser = userRepository.findById((Long) userId) // Fetch the User entity from the database
+            currentUser = userRepository.findById((Long) userId)   
                     .orElse(null);
             if (currentUser != null) {
                 logger.info("OrderController: Received request for user: {}", currentUser.getEmail());
             } else {
                 logger.warn("OrderController: User ID found in session ({}), but User entity not found in DB.", userId);
-                // Optionally invalidate session if user not found in DB for the ID in session
+                  
                 session.invalidate();
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User session invalid. Please log in again."));
             }
         } else {
             logger.warn("OrderController: No userId found in session for placeOrder request. User not authenticated.");
-            // Return unauthorized response if no user is in session
+              
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User not authenticated. Please log in."));
         }
 

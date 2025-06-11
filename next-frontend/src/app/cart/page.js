@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Header from '@/components/home/Header';
 import Footer from '@/components/home/Footer';
 import { PlusIcon, MinusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/solid';
-import { CreditCardIcon, TruckIcon } from '@heroicons/react/24/outline'; // Importing new icons
+import { CreditCardIcon, TruckIcon } from '@heroicons/react/24/outline';
 
 const cartItemAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -48,7 +48,7 @@ export default function CartPage() {
       });
 
       if (!response.ok) {
-          // Handle both 404 (cart not found) and 401/403 (unauthorized)
+
           if (response.status === 404 || response.status === 401 || response.status === 403) {
             setIsCartEmpty(true);
             setCart({ items: [] });

@@ -93,7 +93,7 @@ public class AuthController {
             @RequestBody Map<String, String> body,
             HttpSession session
     ) {
-        // Check if user is authenticated
+          
         Object userId = session.getAttribute("userId");
         if (userId == null) {
             return ResponseEntity.status(401).body(
@@ -101,11 +101,11 @@ public class AuthController {
             );
         }
 
-        // Get request parameters
+          
         String currentPassword = body.get("currentPassword");
         String newPassword = body.get("newPassword");
 
-        // Validate input
+          
         if (currentPassword == null || currentPassword.isBlank()) {
             return ResponseEntity.badRequest().body(
                     Map.of("success", false, "message", "Current password is required")
@@ -118,7 +118,7 @@ public class AuthController {
             );
         }
 
-        // Enhanced password validation
+          
         String passwordValidationError = validatePasswordStrength(newPassword);
         if (passwordValidationError != null) {
             return ResponseEntity.badRequest().body(
@@ -127,10 +127,10 @@ public class AuthController {
         }
 
         try {
-            // Find the user
+              
             Optional<User> userOpt = userRepository.findById((Long) userId);
             if (userOpt.isEmpty()) {
-                // This shouldn't happen if session is valid, but handle it
+                  
                 session.invalidate();
                 return ResponseEntity.status(401).body(
                         Map.of("success", false, "message", "User not found")
@@ -139,21 +139,21 @@ public class AuthController {
 
             User user = userOpt.get();
 
-            // Verify current password
+              
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
                 return ResponseEntity.status(401).body(
                         Map.of("success", false, "message", "Current password is incorrect")
                 );
             }
 
-            // Check if new password is different from current password
+              
             if (passwordEncoder.matches(newPassword, user.getPassword())) {
                 return ResponseEntity.badRequest().body(
                         Map.of("success", false, "message", "New password must be different from current password")
                 );
             }
 
-            // Update password
+              
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
 
@@ -230,7 +230,7 @@ public class AuthController {
         String email = body.get("email");
         String password = body.get("password");
 
-        // Validate input fields
+          
         if (email == null || email.isBlank()) {
             return ResponseEntity.badRequest().body(
                     Map.of("success", false, "message", "Email is required")
@@ -245,14 +245,14 @@ public class AuthController {
 
         Optional<User> userOpt = userRepository.findByEmail(email);
 
-        // Check if user exists
+          
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).body(
                     Map.of("success", false, "message", "Account not found with this email")
             );
         }
 
-        // Verify password
+          
         if (!passwordEncoder.matches(password, userOpt.get().getPassword())) {
             return ResponseEntity.status(401).body(
                     Map.of("success", false, "message", "Incorrect password")
@@ -273,16 +273,16 @@ public class AuthController {
                     Map.of("success", false, "message", "Not authenticated")
             );
         }
-        // Fetch the user from the repository using the userId
-        Optional<User> userOpt = userRepository.findById((Long) userId); // Assuming userId is Long
+          
+        Optional<User> userOpt = userRepository.findById((Long) userId);   
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             return ResponseEntity.ok(
                     Map.of("success", true, "userId", userId, "email", user.getEmail(), "firstName", user.getFirstName(), "lastName", user.getLastName())
             );
         } else {
-            // If userId is in session but user not found (shouldn't happen often)
-            session.invalidate(); // Invalidate session if user not found
+              
+            session.invalidate();   
             return ResponseEntity.status(401).body(
                     Map.of("success", false, "message", "User not found for session")
             );

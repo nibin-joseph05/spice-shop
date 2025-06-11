@@ -272,7 +272,7 @@ export default function PaymentPage() {
               if (verifyResponse.ok && verifyData.success) {
                 showMessage('Payment verified and order confirmed!', true);
                 await clearCartLocally();
-                router.push(`/order-confirmation?orderId=${orderDetails.orderId}`);
+                router.push(`/my-profile/order-details/${orderDetails.orderId}?message=OrderConfirmed`);
               } else {
                 throw new Error(verifyData.message || 'Payment verification failed. Please contact support.');
               }
@@ -308,7 +308,7 @@ export default function PaymentPage() {
       } else if (selectedPaymentMethod === 'cod') {
         showMessage('Cash on Delivery selected. Order placed successfully!', true);
         await clearCartLocally();
-        router.push(`/order-confirmation?orderId=${orderDetails.orderId}`);
+        router.push(`/my-profile/order-details/${orderDetails.orderId}?message=OrderConfirmed`);
       } else {
           throw new Error('Invalid payment method selected.');
       }

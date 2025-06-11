@@ -24,7 +24,7 @@ export default function MyProfile() {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  // Enhanced password validation function
+
   const validatePassword = (password) => ({
     length: password.length >= 8,
     upper: /[A-Z]/.test(password),
@@ -33,7 +33,7 @@ export default function MyProfile() {
     special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
   });
 
-  // Effect to check session and fetch user profile data
+
   useEffect(() => {
     const checkSessionAndFetchData = async () => {
       setIsLoading(true);
@@ -73,7 +73,7 @@ export default function MyProfile() {
     checkSessionAndFetchData();
   }, [backendUrl]);
 
-  // Effect to fetch orders when 'orders' tab is active or user logs in
+
   useEffect(() => {
     if (activeTab === 'orders' && userLoggedIn) {
       const fetchOrders = async () => {
@@ -130,23 +130,23 @@ export default function MyProfile() {
   const validatePasswordForm = () => {
     const newErrors = {};
 
-    // Check if current password is provided
+
     if (!passwordData.currentPassword) {
       newErrors.currentPassword = 'Current password is required';
     }
 
-    // Validate new password against all requirements
+
     const passwordValidations = validatePassword(passwordData.newPassword);
     if (!Object.values(passwordValidations).every(Boolean)) {
       newErrors.newPassword = 'Password must meet all requirements';
     }
 
-    // Check if passwords match
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    // Check if new password is different from current (basic check)
+
     if (passwordData.currentPassword && passwordData.newPassword &&
         passwordData.currentPassword === passwordData.newPassword) {
       newErrors.newPassword = 'New password must be different from current password';
@@ -190,7 +190,7 @@ export default function MyProfile() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
-    // Clear previous errors
+
     setErrors({});
 
     if (validatePasswordForm()) {

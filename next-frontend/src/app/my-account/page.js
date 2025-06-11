@@ -36,7 +36,7 @@ export default function MyAccount() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
 
-  // Separate states for login and registration
+
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [registrationLoading, setRegistrationLoading] = useState(false);
@@ -203,7 +203,7 @@ export default function MyAccount() {
         <div className="max-w-4xl mx-auto"> {/* Adjusted max-width for better centering */}
           <motion.h1
             variants={itemVariants}
-            className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center" // Centered heading
+            className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center"
           >
             {success ? 'Registration Successful!' :
               registrationStep === 3 ? 'Complete Your Profile' : 'Welcome to Aroglin Spice Farms!'}
@@ -230,7 +230,7 @@ export default function MyAccount() {
               {registrationStep === 1 && (
                 <motion.div
                   variants={itemVariants}
-                  className="bg-white p-8 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between" // Added justify-between for equal height
+                  className="bg-white p-8 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between"
                 >
                   <div className="space-y-6">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3 mb-6">
@@ -344,7 +344,7 @@ export default function MyAccount() {
               {registrationStep === 1 && (
                 <motion.div
                   variants={itemVariants}
-                  className="bg-white p-8 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between" // Added justify-between for equal height
+                  className="bg-white p-8 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between"
                 >
                   <div className="space-y-6">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3 mb-6">

@@ -28,6 +28,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final CartRepository cartRepository;
     private final SpicePackRepository spicePackRepository;
+    private final EmailService emailService;
 
     @Value("${razorpay.key_id}")
     private String razorpayKeyId;
@@ -36,11 +37,12 @@ public class PaymentService {
     private String razorpayKeySecret;
 
     public PaymentService(OrderRepository orderRepository, PaymentRepository paymentRepository,
-                          CartRepository cartRepository, SpicePackRepository spicePackRepository) {
+                          CartRepository cartRepository, SpicePackRepository spicePackRepository, EmailService emailService) {
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
         this.cartRepository = cartRepository;
         this.spicePackRepository = spicePackRepository; // Initialize SpicePackRepository
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -73,19 +75,20 @@ public class PaymentService {
                 order.setPaymentDate(LocalDateTime.now()); // Set payment date on order
                 orderRepository.save(order);
 
-                // --- CRITICAL CHANGE: Reduce stock and clear cart ONLY on successful payment verification ---
+
                 for (OrderItem item : order.getItems()) {
                     SpicePack pack = item.getSpicePack();
                     if (pack.getStockQuantity() < item.getQuantity()) {
-                        // This should ideally not happen if initial stock check was good, but good to double check
+
                         throw new CustomException("Insufficient stock for " + item.getSpiceName() + " during payment verification.");
                     }
                     pack.setStockQuantity(pack.getStockQuantity() - item.getQuantity());
                     spicePackRepository.save(pack);
                 }
-                // Clear the user's cart after successful order placement and payment
+
                 cartRepository.findByUser(order.getUser()).ifPresent(cartRepository::delete);
-                // --- END CRITICAL CHANGE ---
+
+                emailService.sendOrderConfirmationEmail(order);
 
                 return PaymentVerificationResponse.builder()
                         .orderId(order.getId())

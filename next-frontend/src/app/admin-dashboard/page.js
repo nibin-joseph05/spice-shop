@@ -1,4 +1,4 @@
-// app/admin-dashboard/page.js
+
 "use client";
 import { useRouter } from "next/navigation";
 import { FiBox, FiUsers, FiDollarSign } from "react-icons/fi";
