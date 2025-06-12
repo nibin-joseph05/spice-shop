@@ -69,7 +69,6 @@ public class UserController {
 
         User user = userOpt.get();
 
-          
         String firstName = updateData.get("firstName");
         String lastName = updateData.get("lastName");
 
@@ -81,7 +80,6 @@ public class UserController {
             return ResponseEntity.status(400).body(Map.of("success", false, "message", "Last name is required"));
         }
 
-          
         user.setFirstName(firstName.trim());
         user.setLastName(lastName.trim());
 
@@ -101,8 +99,6 @@ public class UserController {
         }
     }
 
-
-      
     private Long getUserIdFromSession(HttpSession session) {
         Object userIdObj = session.getAttribute("userId");
         if (userIdObj == null) {
@@ -117,7 +113,6 @@ public class UserController {
         return ResponseEntity.ok(Map.of("count", userCount));
     }
 
-
     @PostMapping("/me/addresses")
     public ResponseEntity<Map<String, Object>> addAddressForCurrentUser(@Valid @RequestBody DeliveryAddress address, HttpSession session) {
         try {
@@ -131,8 +126,6 @@ public class UserController {
         }
     }
 
-      
-      
     @GetMapping("/me/addresses")
     public ResponseEntity<Map<String, Object>> getAllAddressesForCurrentUser(HttpSession session) {
         try {
@@ -145,7 +138,6 @@ public class UserController {
         }
     }
 
-      
     @GetMapping("/me/addresses/{addressId}")
     public ResponseEntity<Map<String, Object>> getAddressByIdForCurrentUser(@PathVariable Long addressId, HttpSession session) {
         try {
@@ -162,8 +154,6 @@ public class UserController {
         }
     }
 
-      
-      
     @PutMapping("/me/addresses/{addressId}")
     public ResponseEntity<Map<String, Object>> updateAddressForCurrentUser(@PathVariable Long addressId, @Valid @RequestBody DeliveryAddress address, HttpSession session) {
         try {
@@ -177,8 +167,6 @@ public class UserController {
         }
     }
 
-      
-      
     @DeleteMapping("/me/addresses/{addressId}")
     public ResponseEntity<Map<String, Object>> deleteAddressForCurrentUser(@PathVariable Long addressId, HttpSession session) {
         try {
@@ -190,4 +178,11 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("success", false, "message", e.getMessage()));
         }
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(users);
+    }
+
 }
