@@ -103,4 +103,30 @@ public class AdminService {
         return null;
     }
 
+    public boolean adminEmailExists(String email) {
+        return adminRepository.findByEmail(email) != null;
+    }
+
+    public boolean resetPasswordWithEmailAndSecretKey(String email, String secretKey, String newPassword) {
+        Admin admin = adminRepository.findByEmail(email);
+        if (admin == null) {
+            return false; // Admin not found for this email
+        }
+
+        if (!admin.getSecretKey().equals(secretKey)) {
+            return false; // Secret key does not match for this admin
+        }
+
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        admin.setPassword(hashedPassword);
+        adminRepository.save(admin);
+        return true;
+    }
+
+    public boolean verifySecretKeyForEmail(String email, String secretKey) {
+        Admin admin = adminRepository.findByEmail(email);
+        return admin != null && admin.getSecretKey().equals(secretKey);
+    }
+
+
 }

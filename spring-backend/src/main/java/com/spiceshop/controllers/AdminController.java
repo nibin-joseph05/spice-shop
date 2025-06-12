@@ -133,7 +133,7 @@ public class AdminController {
         public void setPhone(String phone) { this.phone = phone; }
     }
 
-    @PutMapping("/update-profile/{id}") // Use PUT for updates, and include ID in path
+    @PutMapping("/update-profile/{id}")
     public ResponseEntity<Map<String, String>> updateAdminProfile(
             @PathVariable Long id, @RequestBody UpdateProfileRequest request) {
         Map<String, String> response = new HashMap<>();
@@ -142,7 +142,7 @@ public class AdminController {
         Admin adminToUpdate = new Admin();
         adminToUpdate.setName(request.getName());
         adminToUpdate.setEmail(request.getEmail());
-        adminToUpdate.setPhone(request.getPhone()); // Phone can be set to null if intended to clear
+        adminToUpdate.setPhone(request.getPhone());
 
         Admin updatedAdmin = adminService.updateAdminProfile(id, adminToUpdate);
 
@@ -155,6 +155,78 @@ public class AdminController {
         }
     }
 
+
+    @PostMapping("/forgot-password/check-email")
+    public ResponseEntity<Map<String, String>> checkAdminEmail(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required."));
+        }
+
+        boolean exists = adminService.adminEmailExists(email);
+        if (exists) {
+            return ResponseEntity.ok(Map.of("message", "Email found. Please proceed with your secret key."));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Admin with this email not found."));
+        }
+    }
+
+    @PostMapping("/forgot-password/request")
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Email is required."));
+        }
+
+        boolean exists = adminService.adminEmailExists(email);
+        if (exists) {
+
+            return ResponseEntity.ok(Map.of("success", "true", "message", "If an admin with that email exists, a secret key has been sent (or is implicitly known)."));
+        } else {
+            return ResponseEntity.ok(Map.of("success", "false", "message", "Admin with this email not found."));
+
+        }
+    }
+
+    @PostMapping("/forgot-password/verify-key")
+    public ResponseEntity<Map<String, String>> verifySecretKey(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String secretKey = payload.get("secretKey");
+
+        if (email == null || email.isEmpty() || secretKey == null || secretKey.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Email and secret key are required."));
+        }
+
+        boolean verified = adminService.verifySecretKeyForEmail(email, secretKey);
+        if (verified) {
+            return ResponseEntity.ok(Map.of("success", "true", "message", "Secret key verified. Please set your new password."));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", "false", "message", "Invalid email or secret key."));
+        }
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String secretKey = payload.get("secretKey");
+        String newPassword = payload.get("newPassword");
+
+        if (email == null || email.isEmpty() || secretKey == null || secretKey.isEmpty() || newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Email, secret key, and new password are all required."));
+        }
+
+        // Basic password complexity validation (should match frontend)
+        if (!newPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()]).{8,}$")) {
+            return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "New password does not meet the requirements."));
+        }
+
+        boolean passwordChanged = adminService.resetPasswordWithEmailAndSecretKey(email, secretKey, newPassword);
+        if (passwordChanged) {
+            return ResponseEntity.ok(Map.of("success", "true", "message", "Password reset successfully. You can now log in with your new password."));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", "false", "message", "Invalid email or secret key. Failed to reset password."));
+        }
+    }
 
 
 }
