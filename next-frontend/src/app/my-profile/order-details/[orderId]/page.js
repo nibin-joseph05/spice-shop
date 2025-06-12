@@ -105,6 +105,27 @@ export default function OrderDetailsPage() {
     };
   };
 
+  const getStatusMessage = (status) => {
+      switch (status) {
+          case 'PENDING':
+              return "Your order has been received and is awaiting confirmation.";
+          case 'PROCESSING':
+              return "Your order is being prepared and will be processed shortly.";
+          case 'SHIPPED':
+              return "Great news! Your order has been shipped and is on its way.";
+          case 'DELIVERED':
+              return "Your order has been successfully delivered. Enjoy your spices!";
+          case 'CANCELLED':
+              return "Your order has been cancelled. If this was a mistake, please contact support.";
+          case 'REFUNDED':
+              return "Your order has been refunded. Please check your account for details.";
+          case 'FAILED': // Assuming you might have a 'FAILED' status from payment
+              return "Payment for your order failed. Please review your payment method or try again.";
+          default:
+              return "The current status of your order is: " + status.toLowerCase();
+      }
+  };
+
   const StatusBadge = ({ status }) => {
     const config = getStatusConfig(status);
     return (
@@ -232,9 +253,13 @@ export default function OrderDetailsPage() {
                   })}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right flex flex-col items-end"> {/* Added flex and items-end for alignment */}
                 <p className="text-3xl font-bold text-emerald-600 mb-2">₹{order.totalAmount.toFixed(2)}</p>
                 <StatusBadge status={order.orderStatus} />
+                
+                <p className="text-gray-600 text-sm mt-2 max-w-[250px] text-right">
+                  {getStatusMessage(order.orderStatus)}
+                </p>
               </div>
             </div>
           </motion.div>

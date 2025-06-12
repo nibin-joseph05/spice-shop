@@ -311,7 +311,7 @@ export default function AdminOrderDetailsPage() {
                     disabled={isUpdatingStatus}
                   >
                     {/* Make sure these options match your Order.OrderStatus enum in Java */}
-                    <option value="PLACED">Placed</option>
+                    <option value="PENDING">Pending</option>
                     <option value="PROCESSING">Processing</option>
                     <option value="SHIPPED">Shipped</option>
                     <option value="DELIVERED">Delivered</option>

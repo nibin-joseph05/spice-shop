@@ -361,4 +361,27 @@ public class OrderService {
 
         return mapOrderToOrderDetailsDto(order);
     }
+
+
+    @Transactional
+    public OrderDetailsDto updateOrderStatus(Long orderId, String newStatusString) {
+        logger.info("OrderService: Attempting to update status for orderId {} to {}", orderId, newStatusString);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException("Order not found with ID: " + orderId));
+
+        try {
+            Order.OrderStatus newStatus = Order.OrderStatus.valueOf(newStatusString.toUpperCase());
+            order.setOrderStatus(newStatus);
+            Order updatedOrder = orderRepository.save(order);
+            logger.info("OrderService: Successfully updated status for orderId {} to {}", orderId, newStatusString);
+            return mapOrderToOrderDetailsDto(updatedOrder); // Return the updated DTO
+        } catch (IllegalArgumentException e) {
+            logger.error("OrderService: Invalid order status string received: {}", newStatusString, e);
+            throw new CustomException("Invalid status provided: " + newStatusString);
+        } catch (Exception e) {
+            logger.error("OrderService: Error updating order status for orderId {}: {}", orderId, e.getMessage(), e);
+            throw new CustomException("Failed to update order status due to an internal error.");
+        }
+    }
 }

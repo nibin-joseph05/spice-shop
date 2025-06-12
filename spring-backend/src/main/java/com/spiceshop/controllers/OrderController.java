@@ -6,6 +6,7 @@ import com.spiceshop.exceptions.CustomException;
 import com.spiceshop.models.User;
 import com.spiceshop.repositorys.UserRepository;
 import com.spiceshop.services.OrderService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -154,6 +155,27 @@ public class OrderController {
         } catch (Exception e) {
             logger.error("OrderController: Unexpected error fetching order details for admin: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching order details."));
+        }
+    }
+
+    @PatchMapping("/admin/{orderId}/status")
+    public ResponseEntity<ApiResponse<OrderDetailsDto>> updateOrderStatus(
+            @PathVariable Long orderId,
+            @Valid @RequestBody OrderStatusUpdateRequest request) {
+        logger.info("OrderController: Admin attempting to update status for orderId {} to {}", orderId, request.getStatus());
+        try {
+            OrderDetailsDto updatedOrderDetails = orderService.updateOrderStatus(orderId, request.getStatus());
+            return ResponseEntity.ok(ApiResponse.success("Order status updated successfully.", updatedOrderDetails));
+        } catch (CustomException e) {
+            logger.error("OrderController: CustomException updating order status: {}", e.getMessage());
+
+            if (e.getMessage().contains("Order not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("OrderController: Unexpected error updating order status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while updating order status."));
         }
     }
 
