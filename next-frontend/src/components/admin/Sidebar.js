@@ -12,7 +12,7 @@ export const Sidebar = () => {
     { path: "/admin-dashboard", icon: FiHome, label: "Dashboard Overview" },
     { path: "/admin/add-spice", icon: FiPlusCircle, label: "Add New Product" },
     { path: "/admin/spice-list", icon: FiList, label: "Spice List" },
-    { path: "/admin/inventory", icon: FiBox, label: "Manage Inventory" },
+    { path: "/admin/orders", icon: FiBox, label: "View User Orders" },
     { path: "/admin/customers", icon: FiUsers, label: "Customer Management" },
     { path: "/admin/analytics", icon: FiDollarSign, label: "Order Analytics" },
   ];

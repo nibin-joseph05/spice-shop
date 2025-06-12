@@ -125,4 +125,36 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching order details."));
         }
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<OrderHistoryDto>>> getAllOrdersForAdmin() {
+
+        logger.info("OrderController: Accessing /api/orders/all endpoint (public access).");
+        try {
+            List<OrderHistoryDto> allOrders = orderService.getAllOrders();
+            return ResponseEntity.ok(ApiResponse.success("All orders fetched successfully.", allOrders));
+        } catch (CustomException e) {
+            logger.error("OrderController: CustomException fetching all orders (public): {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("OrderController: Unexpected error fetching all orders (public): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching all orders."));
+        }
+    }
+
+    @GetMapping("/admin/{orderId}")
+    public ResponseEntity<ApiResponse<OrderDetailsDto>> getOrderDetailsForAdmin(@PathVariable Long orderId) {
+        logger.info("OrderController: Admin accessing order details for orderId: {}", orderId);
+        try {
+            OrderDetailsDto orderDetails = orderService.getOrderDetailByIdForAdmin(orderId);
+            return ResponseEntity.ok(ApiResponse.success("Order details fetched successfully for admin.", orderDetails));
+        } catch (CustomException e) {
+            logger.error("OrderController: CustomException fetching order details for admin: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("OrderController: Unexpected error fetching order details for admin: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("An unexpected error occurred while fetching order details."));
+        }
+    }
+
 }

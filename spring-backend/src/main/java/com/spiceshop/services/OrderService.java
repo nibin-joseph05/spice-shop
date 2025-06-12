@@ -198,19 +198,21 @@ public class OrderService {
                 .build();
     }
 
+
+
     public List<OrderHistoryDto> getUserOrderHistory(User currentUser) {
         if (currentUser == null) {
             throw new CustomException("User not authenticated.");
         }
-        // Fetch orders by user, ordered by most recent first
+
         List<Order> orders = orderRepository.findByUserOrderByCreatedAtDesc(currentUser);
 
         return orders.stream()
-                .map(this::mapToOrderHistoryDto) // Map each Order entity to OrderHistoryDto
+                .map(this::mapToOrderHistoryDto)
                 .collect(Collectors.toList());
     }
 
-    // New private method to map Order entity to OrderHistoryDto
+
     private OrderHistoryDto mapToOrderHistoryDto(Order order) {
         List<OrderHistoryItemDto> itemDtos = order.getItems().stream()
                 .map(orderItem -> {
@@ -220,7 +222,7 @@ public class OrderService {
                             orderItem.getSpicePack().getVariant().getSpice() != null &&
                             orderItem.getSpicePack().getVariant().getSpice().getImages() != null &&
                             !orderItem.getSpicePack().getVariant().getSpice().getImages().isEmpty()) {
-                        // Get the first image URL associated with the spice
+
                         imageUrl = orderItem.getSpicePack().getVariant().getSpice().getImages().get(0).getImageUrl();
                     }
 
@@ -231,7 +233,7 @@ public class OrderService {
                             .packWeightInGrams(orderItem.getPackWeightInGrams())
                             .unitPrice(orderItem.getUnitPrice())
                             .quantity(orderItem.getQuantity())
-                            .imageUrl(imageUrl) // Set the fetched image URL
+                            .imageUrl(imageUrl)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -245,8 +247,9 @@ public class OrderService {
                 .totalAmount(order.getTotal())
                 .orderStatus(order.getOrderStatus())
                 .paymentStatus(order.getPaymentStatus())
-                .paymentMethod(order.getPaymentMethod().name()) // Convert enum to string
-                // Map shipping address details
+                .paymentMethod(order.getPaymentMethod().name())
+                .customerName(order.getUser().getFirstName() + " " + order.getUser().getLastName()) // <-- ADD THIS
+                .customerEmail(order.getUser().getEmail()) // <-- ADD THIS
                 .shippingFirstName(order.getShippingFirstName())
                 .shippingLastName(order.getShippingLastName())
                 .shippingAddressLine1(order.getShippingAddressLine1())
@@ -255,10 +258,16 @@ public class OrderService {
                 .shippingState(order.getShippingState())
                 .shippingPinCode(order.getShippingPinCode())
                 .shippingPhone(order.getShippingPhone())
-                .orderNotes(order.getShippingNote()) // Assuming orderNotes maps to shippingNote
-
-                .items(itemDtos) // Attach the list of detailed items
+                .orderNotes(order.getShippingNote())
+                .items(itemDtos)
                 .build();
+    }
+
+    public List<OrderHistoryDto> getAllOrders() {
+        List<Order> orders = orderRepository.findAllByOrderByCreatedAtDesc();
+        return orders.stream()
+                .map(this::mapToOrderHistoryDto)
+                .collect(Collectors.toList());
     }
 
     public OrderDetailsDto getOrderDetailByIdAndUser(Long orderId, User user) {
@@ -270,26 +279,40 @@ public class OrderService {
     }
 
     private OrderDetailsDto mapOrderToOrderDetailsDto(Order order) {
-
-        String fullAddress = order.getShippingFirstName() + " " + order.getShippingLastName();
-        String addressLine1 = fullAddress + ", " + order.getShippingAddressLine1();
-
-        OrderDetailsDto.ShippingAddressDto shippingAddressDto =
-                new OrderDetailsDto.ShippingAddressDto(
-                        addressLine1,
-                        order.getShippingAddressLine2() != null ? order.getShippingAddressLine2() : "",
-                        order.getShippingCity(),
-                        order.getShippingState(),
-                        order.getShippingPinCode(),
-                        "India",
-                        order.getShippingPhone()
-                );
-
         // Map order items
         List<OrderDetailsDto.OrderItemDetailsDto> itemDtos = order.getItems().stream()
-                .map(this::mapOrderItemToOrderItemDetailsDto)
+                .map(orderItem -> {
+                    String imageUrl = null;
+                    if (orderItem.getSpicePack() != null &&
+                            orderItem.getSpicePack().getVariant() != null &&
+                            orderItem.getSpicePack().getVariant().getSpice() != null &&
+                            orderItem.getSpicePack().getVariant().getSpice().getImages() != null &&
+                            !orderItem.getSpicePack().getVariant().getSpice().getImages().isEmpty()) {
+                        imageUrl = orderItem.getSpicePack().getVariant().getSpice().getImages().get(0).getImageUrl();
+                    }
+                    return new OrderDetailsDto.OrderItemDetailsDto(
+                            orderItem.getSpiceName(),
+                            orderItem.getQuantity(),
+                            orderItem.getUnitPrice(),
+                            orderItem.getPackWeightInGrams(),
+                            orderItem.getQualityClass(),
+                            imageUrl
+                    );
+                })
                 .collect(Collectors.toList());
 
+
+        OrderDetailsDto.ShippingAddressDto shippingAddressDto = new OrderDetailsDto.ShippingAddressDto(
+                order.getShippingAddressLine1(),
+                order.getShippingAddressLine2(),
+                order.getShippingCity(),
+                order.getShippingState(),
+                order.getShippingPinCode(),
+                "India",
+                order.getShippingPhone()
+        );
+
+        // Build the OrderDetailsDto
         return new OrderDetailsDto(
                 order.getId(),
                 order.getOrderNumber(),
@@ -298,7 +321,10 @@ public class OrderService {
                 order.getOrderStatus().name(),
                 order.getPaymentStatus().name(),
                 order.getPaymentMethod().name(),
+                order.getUser().getFirstName() + " " + order.getUser().getLastName(),
+                order.getUser().getEmail(),
                 shippingAddressDto,
+                order.getShippingNote(),
                 itemDtos
         );
     }
@@ -324,5 +350,15 @@ public class OrderService {
                 orderItem.getQualityClass(),
                 imageUrl
         );
+    }
+
+
+    public OrderDetailsDto getOrderDetailByIdForAdmin(Long orderId) {
+        logger.info("OrderService: Fetching order details for admin for orderId: {}", orderId);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException("Order not found with ID: " + orderId));
+
+        return mapOrderToOrderDetailsDto(order);
     }
 }

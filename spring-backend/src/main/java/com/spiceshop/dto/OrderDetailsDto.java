@@ -15,10 +15,13 @@ public class OrderDetailsDto {
     private String paymentMethod;
     private ShippingAddressDto shippingAddress;
     private List<OrderItemDetailsDto> items;
+    private String customerName;
+    private String customerEmail;
+    private String orderNotes;
 
     public OrderDetailsDto() {}
 
-    public OrderDetailsDto(Long id, String orderNumber, LocalDateTime orderDate, BigDecimal totalAmount, String orderStatus, String paymentStatus, String paymentMethod, ShippingAddressDto shippingAddress, List<OrderItemDetailsDto> items) {
+    public OrderDetailsDto(Long id, String orderNumber, LocalDateTime orderDate, BigDecimal totalAmount, String orderStatus, String paymentStatus, String paymentMethod, String customerName, String customerEmail, ShippingAddressDto shippingAddress, String orderNotes, List<OrderItemDetailsDto> items) {
         this.id = id;
         this.orderNumber = orderNumber;
         this.orderDate = orderDate;
@@ -26,9 +29,11 @@ public class OrderDetailsDto {
         this.orderStatus = orderStatus;
         this.paymentStatus = paymentStatus;
         this.paymentMethod = paymentMethod;
+        this.customerName = customerName;
+        this.customerEmail = customerEmail;
         this.shippingAddress = shippingAddress;
+        this.orderNotes = orderNotes;
         this.items = items;
-
     }
 
 
@@ -69,6 +74,10 @@ public class OrderDetailsDto {
     public List<OrderItemDetailsDto> getItems() {
         return items;
     }
+
+    public String getCustomerName() { return customerName; }
+    public String getCustomerEmail() { return customerEmail; }
+    public String getOrderNotes() { return orderNotes; }
 
     // Nested DTO for Order Items
     public static class OrderItemDetailsDto {

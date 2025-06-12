@@ -14,4 +14,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByRazorpayOrderId(String razorpayOrderId);
     List<Order> findByUserOrderByCreatedAtDesc(User user);
     Optional<Order> findByIdAndUser(Long id, User user);
+    List<Order> findAllByOrderByCreatedAtDesc();
 }

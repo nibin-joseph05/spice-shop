@@ -1,7 +1,7 @@
 // src/main/java/com/spiceshop/dto/OrderHistoryDto.java
 package com.spiceshop.dto;
 
-import com.spiceshop.models.Order; // Assuming you want to expose PaymentStatus and OrderStatus enums
+import com.spiceshop.models.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +25,11 @@ public class OrderHistoryDto {
     private Order.OrderStatus orderStatus;
     private Order.PaymentStatus paymentStatus;
     private String paymentMethod;
+
+
+    private String customerName;
+    private String customerEmail;
+
     private String shippingFirstName;
     private String shippingLastName;
     private String shippingAddressLine1;
