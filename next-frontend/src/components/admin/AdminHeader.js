@@ -20,9 +20,7 @@ export const AdminHeader = ({ darkMode, toggleDarkMode, handleLogout }) => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-green-400 bg-clip-text text-transparent">
             Aroglin Spice Farms Admin Panel
           </h1>
-          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Logged in as: <span className="font-mono text-green-300">admin@aroglinspices.com</span>
-          </p>
+
         </div>
       </div>
 

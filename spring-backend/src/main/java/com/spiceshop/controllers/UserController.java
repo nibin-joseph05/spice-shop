@@ -111,8 +111,13 @@ public class UserController {
         return (Long) userIdObj;
     }
 
-      
-      
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Long>> getTotalUsersCount() {
+        long userCount = userRepository.count();
+        return ResponseEntity.ok(Map.of("count", userCount));
+    }
+
+
     @PostMapping("/me/addresses")
     public ResponseEntity<Map<String, Object>> addAddressForCurrentUser(@Valid @RequestBody DeliveryAddress address, HttpSession session) {
         try {
