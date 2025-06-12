@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+
 
 @Service
 public class AdminService {
@@ -43,8 +46,61 @@ public class AdminService {
         return false;
     }
 
-    // Method to recover the admin using secret key
+    public Admin getAnyAdminProfile() {
+
+        List<Admin> admins = adminRepository.findAll();
+        if (!admins.isEmpty()) {
+            return admins.get(0);
+        }
+        return null;
+    }
+
+
     public Admin recoverAdmin(String secretKey) {
         return adminRepository.findBySecretKey(secretKey);
     }
+
+    public Admin findByEmail(String email) {
+        return adminRepository.findByEmail(email);
+    }
+
+    public boolean changePassword(String email, String currentPassword, String newPassword) {
+        Admin admin = adminRepository.findByEmail(email);
+        if (admin == null) {
+            return false; // Admin not found
+        }
+
+        // Verify the current password
+        if (!passwordEncoder.matches(currentPassword, admin.getPassword())) {
+            return false; // Current password does not match
+        }
+
+        // Hash and set the new password
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        admin.setPassword(hashedPassword);
+        adminRepository.save(admin); // Save the updated admin
+        return true;
+    }
+
+    public Admin updateAdminProfile(Long id, Admin updatedAdmin) {
+        Optional<Admin> existingAdminOptional = adminRepository.findById(id);
+        if (existingAdminOptional.isPresent()) {
+            Admin adminToUpdate = existingAdminOptional.get();
+
+            // Only update allowed fields
+            if (updatedAdmin.getName() != null && !updatedAdmin.getName().isEmpty()) {
+                adminToUpdate.setName(updatedAdmin.getName());
+            }
+            if (updatedAdmin.getEmail() != null && !updatedAdmin.getEmail().isEmpty()) {
+                // You might want to add logic here to prevent changing email to an already existing one
+                adminToUpdate.setEmail(updatedAdmin.getEmail());
+            }
+            // Phone can be null or empty, allow it to be updated or cleared
+            adminToUpdate.setPhone(updatedAdmin.getPhone());
+
+            return adminRepository.save(adminToUpdate);
+        }
+        return null;
+    }
+
 }

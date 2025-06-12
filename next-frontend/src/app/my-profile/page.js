@@ -8,6 +8,7 @@ import NavTabs from '@/components/profile/NavTabs';
 import ProfileForm from '@/components/profile/ProfileForm';
 import PasswordForm from '@/components/profile/PasswordForm';
 import OrdersList from '@/components/profile/OrdersList';
+import { FiLock, FiLogIn, FiUserPlus } from 'react-icons/fi';
 
 export default function MyProfile() {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
@@ -231,7 +232,16 @@ export default function MyProfile() {
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
         <Header />
         <main className="flex-grow flex items-center justify-center">
-          <p>Loading profile data...</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-4 p-8 bg-white rounded-2xl shadow-xl border border-gray-100"
+          >
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500 mx-auto"></div>
+            <h2 className="text-2xl font-bold text-gray-800">Loading Your Profile...</h2>
+            <p className="text-gray-600">Please wait while we fetch your personal data and order history.</p>
+          </motion.div>
         </main>
         <Footer />
       </div>
@@ -242,14 +252,48 @@ export default function MyProfile() {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-green-50/50 to-white">
         <Header />
-        <main className="flex-grow flex items-center justify-center">
-          <p className="text-red-600 font-semibold text-lg">You must be logged in to view your profile.</p>
-          <button
-            onClick={() => window.location.href = '/my-account'}
-            className="ml-4 px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
+        <main className="flex-grow flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100"
           >
-            Login / Sign Up
-          </button>
+            <div className="mb-6">
+              <FiLock className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+              <p className="text-gray-600 leading-relaxed">
+                To view your profile and manage your orders, settings, and other personal details,
+                please log in or create an account.
+              </p>
+            </div>
+
+            <div className="flex flex-col space-y-4">
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: '#059669' }} // Darker green on hover
+                whileTap={{ scale: 0.98 }}
+                onClick={() => window.location.href = '/my-account'}
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white
+                           font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                <FiLogIn className="w-5 h-5 mr-2" />
+                Login to Your Account
+              </motion.button>
+
+              <p className="text-gray-500 text-sm">Don't have an account?</p>
+
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: '#f0fdf4', borderColor: '#34d399' }} // Lighter green on hover
+                whileTap={{ scale: 0.98 }}
+                onClick={() => window.location.href = '/my-account?tab=signup'} // Assuming a tab or route for sign up
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-green-50 text-green-700
+                           font-semibold rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <FiUserPlus className="w-5 h-5 mr-2" />
+                Create a New Account
+              </motion.button>
+            </div>
+          </motion.div>
         </main>
         <Footer />
       </div>
