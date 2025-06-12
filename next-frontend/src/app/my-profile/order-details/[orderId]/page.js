@@ -66,7 +66,7 @@ export default function OrderDetailsPage() {
 
   const getStatusConfig = (status) => {
     const configs = {
-      'COMPLETED': {
+      'DELIVERED': {
         bg: 'bg-emerald-50',
         text: 'text-emerald-700',
         border: 'border-emerald-200',
@@ -83,6 +83,20 @@ export default function OrderDetailsPage() {
         text: 'text-amber-700',
         border: 'border-amber-200',
         icon: <FiClock className="w-4 h-4" />
+      },
+
+      'SHIPPED': {
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-700',
+        border: 'border-indigo-200',
+        icon: <FiPackage className="w-4 h-4" />
+      },
+
+      'REFUNDED': {
+        bg: 'bg-purple-50',
+        text: 'text-purple-700',
+        border: 'border-purple-200',
+        icon: <FiDollarSign className="w-4 h-4" />
       },
       'CANCELLED': {
         bg: 'bg-red-50',
@@ -119,7 +133,7 @@ export default function OrderDetailsPage() {
               return "Your order has been cancelled. If this was a mistake, please contact support.";
           case 'REFUNDED':
               return "Your order has been refunded. Please check your account for details.";
-          case 'FAILED': // Assuming you might have a 'FAILED' status from payment
+          case 'FAILED':
               return "Payment for your order failed. Please review your payment method or try again.";
           default:
               return "The current status of your order is: " + status.toLowerCase();
@@ -256,7 +270,7 @@ export default function OrderDetailsPage() {
               <div className="text-right flex flex-col items-end"> {/* Added flex and items-end for alignment */}
                 <p className="text-3xl font-bold text-emerald-600 mb-2">₹{order.totalAmount.toFixed(2)}</p>
                 <StatusBadge status={order.orderStatus} />
-                
+
                 <p className="text-gray-600 text-sm mt-2 max-w-[250px] text-right">
                   {getStatusMessage(order.orderStatus)}
                 </p>
