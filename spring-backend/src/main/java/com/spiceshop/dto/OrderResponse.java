@@ -18,5 +18,5 @@ public class OrderResponse {
     private String orderNumber;
     private BigDecimal totalAmount;
     private String paymentMethod;
-    private String razorpayOrderId; // This is crucial for frontend to initiate Razorpay checkout
+    private String razorpayOrderId;
 }
