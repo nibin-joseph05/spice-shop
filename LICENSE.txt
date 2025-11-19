@@ -1,0 +1,30 @@
+Extended Commercial License
+
+Copyright (c) 2025 Nibin Joseph
+
+This license grants the buyer (the “Licensee”) a non-exclusive, non-transferable,
+commercial license to use this software (“Product”) for **unlimited** personal
+or client projects.
+
+Allowed:
+- Use the Product for unlimited commercial projects
+- Modify the source code freely
+- Deploy the product across multiple domains
+- Use the product for clients
+
+Not Allowed:
+- Resell the source code as a template, product, or package
+- Redistribute, upload, or share the source code publicly
+- Claim authorship of the original Product
+- Use the Product to create competing marketplace items
+
+Ownership:
+This license does NOT transfer ownership. All intellectual property rights remain
+with the original author, **Nibin Joseph**.
+
+Resale:
+You may NOT resell, sublicense, or redistribute the source code itself.
+
+Liability:
+The Product is provided “as is” without warranty.
+
