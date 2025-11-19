@@ -1,14 +1,25 @@
 package com.spiceshop.controllers;
 
-import com.spiceshop.models.Admin;
-import com.spiceshop.services.AdminService;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.spiceshop.models.Admin;
+import com.spiceshop.services.AdminService;
+
 import jakarta.servlet.http.HttpSession;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -58,14 +69,11 @@ public class AdminController {
 
     @GetMapping("/profile")
     public ResponseEntity<Admin> getAdminProfile() {
-        // In a real application, you'd retrieve the admin based on the authenticated session
-        // For now, based on your previous code, it fetches the first admin.
+        
         Admin admin = adminService.getAnyAdminProfile();
 
         if (admin != null) {
-            // For security, you might want to return a DTO that excludes sensitive info like password and secret key
-            // unless explicitly requested by a secure endpoint. For this profile view, excluding password is a must.
-            // For now, returning the full object as per previous implementation.
+            
             return ResponseEntity.ok(admin);
         }
 
@@ -122,7 +130,7 @@ public class AdminController {
         public String email;
         public String phone;
 
-        // Getters and Setters (or use Lombok @Data)
+        // Getters and Setters 
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
         public String getName() { return name; }

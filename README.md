@@ -106,6 +106,36 @@ A full-stack e-commerce application for a local spice shop, built with **Spring 
 
 ---
 
+## Screenshots
+
+### Customer Experience
+
+![Home page showing hero and featured products](assets/screenshots/home.png)
+
+![Shop catalog with filters and product cards](assets/screenshots/shop.png)
+
+![User authentication flow with OTP registration](assets/screenshots/login.png)
+
+![Customer cart with line items and totals](assets/screenshots/cart.png)
+
+![Customer profile dashboard](assets/screenshots/profile.png)
+
+### Admin Experience
+
+![Admin login portal](assets/screenshots/admin-login.png)
+
+![Admin control panel overview](assets/screenshots/admin-panel.png)
+
+![Form for adding a new spice](assets/screenshots/add-spice-admin.png)
+
+![Detailed spice view with variants](assets/screenshots/view-spice.png)
+
+![Order management workflow](assets/screenshots/order-management.png)
+
+![Admin profile management](assets/screenshots/admin-profile.png)
+
+---
+
 ## Tech Stack
 
 ### Backend
@@ -600,7 +630,7 @@ This project is licensed under the MIT License.
 
 ## Support
 
-For support, email support@aroglinspices.com or create an issue in the repository.
+For support, email nibin.joseph.career@gmail.com.
 
 ---
 
